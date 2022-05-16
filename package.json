@@ -1,0 +1,25 @@
+{
+  "dependencies": {
+    "express": "^4.18.1",
+    "neo4j-driver": "^4.4.5"
+  },
+  "name": "campettiamo-api",
+  "description": "Il gruppo \"AMEN\", sviluppatore del progetto Campettiamo, è composto dai seguenti membri: - [Alex Callegaro]() - [Mattia Franzin](https://github.com/Mattia2700) - [Enrico Stradiotto](https://github.com/StradeUni) - [Nicola Bernardi](https://github.com/nicolabernardi)",
+  "version": "1.0.0",
+  "main": "api.js",
+  "devDependencies": {},
+  "scripts": {
+    "start": "node api.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amen-unitn/campettiamo-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/amen-unitn/campettiamo-api/issues"
+  },
+  "homepage": "https://github.com/amen-unitn/campettiamo-api#readme"
+}
