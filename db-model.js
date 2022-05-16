@@ -39,26 +39,35 @@ class DBModel {
         return this.createUtenteBase(nome, cognome, email, paypal, telefono, hash, "Gestore")
     }
 
-    async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, tariffa, prenotaEntro) {
+    async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
+        let final = null
+        let result
         try {
-            let result = await session.run('CREATE (c:Campo {id:apoc.create.uuid(), nome:$nome, '+
-                'indirizzo:$indirizzo, cap:$cap, citta:$citta, provincia:$provincia, '+
-                'tariffa:$tariffa, prenota_entro:$prenota_entro}) RETURN c.id', { 
+            result = await session.run('CREATE (c:Campo {id:apoc.create.uuid(), nome:$nome, '+
+                'indirizzo:$indirizzo, cap:$cap, citta:$citta, provincia:$provincia, sport:$sport, '+
+                'tariffa:$tariffa, prenotaEntro:$prenotaEntro}) RETURN c.id', { 
                     "nome": nome,
                     "indirizzo": indirizzo,
                     "cap": cap,
                     "citta": citta,
                     "provincia": provincia,
+                    "sport":sport,
                     "tariffa": tariffa,
-                    "prenota_entro": prenotaEntro })
-            let result2 = await session.run('MATCH (g:Gestore),(c:Campo) WHERE g.id = $gestoreId ' +
-                'AND c.id = $campoId CREATE (g)-[r:affitta]->(c)', { "gestoreId": idGestore, "campoId": result.records[0].get('c.id') })
+                    "prenotaEntro": prenotaEntro
+                     })
+            final = await session.run('MATCH (g:Gestore),(c:Campo) WHERE g.id = $gestoreId ' +
+                'AND c.id = $campoId CREATE (g)-[r:AFFITTA]->(c)', 
+                { "gestoreId": idGestore, "campoId": result.records[0].get('c.id')})
         } catch (error) {
             console.log(error)
         } finally {
             await session.close()
         }
+        if(final !== null) 
+            return result.records[0].get('c.id')
+        else 
+            return null
     }
 
     async getListaCampi(){
@@ -78,6 +87,66 @@ class DBModel {
         return result
     }
 
+    async getCampo(idCampo){
+        const session = driver.session()
+        let result = null
+        try {
+            let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})'+
+            'RETURN c', {"idCampo":idCampo})
+            if(dbResult.records && dbResult.records[0])
+                result = dbResult.records[0].get("c").properties;
+            
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+
+    async editCampo(idGestore, idCampo, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro){
+        const session = driver.session()
+        let result = []
+        try {
+            //MATCH (wallstreet:Movie {title: 'Wall Street'})<-[:ACTED_IN]-(actor)
+            let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})<-[:AFFITTA]-(g:Gestore {id: $idGestore})'+
+            'SET c.nome = $nome, c.indirizzo = $indirizzo, c.cap = $cap, c.citta = $citta, c.provincia = $provincia,' + 
+            ' c.sport = $sport, c.tariffa = $tariffa, c.prenotaEntro = $prenotaEntro', {
+                "idCampo":idCampo,
+                "idGestore":idGestore,
+                "nome":nome,
+                "indirizzo":indirizzo,
+                "cap":cap,
+                "citta":citta,
+                "provincia":provincia,
+                "sport":sport,
+                "tariffa":tariffa,
+                "prenotaEntro":prenotaEntro
+            })
+            result = dbResult.summary.counters._containsUpdates
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+
+    async deleteCampo(idGestore, idCampo){
+        const session = driver.session()
+        let result = []
+        try {
+            result = await session.run('MATCH (c:Campo {id: $idCampo})<-[:AFFITTA]-(g:Gestore {id: $idGestore})'+
+            'DETACH DELETE c', {"idCampo":idCampo, "idGestore":idGestore})
+            
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result.summary.counters._stats.nodesDeleted > 0
+    }
+
     async onexit () {
         // on application exit:
         await driver.close()
@@ -86,26 +155,3 @@ class DBModel {
 }
 
 module.exports.Model = DBModel
-
-/*model = new DBModel()
-
-model.createUtente("Toni", "Negri", "g.r56@gmail.it", "pro7a@it.it", "1239567890", "--");
-model.createUtente("Bepi", "Rossi", "g.r5@gmail.it", "pro6a@it.it", "1239567890", "--");
-model.createUtente("Gianni", "Verdi", "g.r32@gmail.it", "pro5a@it.it", "1239567890", "--");
-
-g1 = model.createGestore("Marco", "Gialli", "g.54r@gmail.it", "pro11a@it.it", "1239567890", "--");
-g2 = model.createGestore("Nicola", "Blu", "g.r4@gmail.it", "pro12a@it.it", "1239567890", "--");
-g3 = model.createGestore("Luca", "Negroni", "l.r@gmail.it", "pro13a@it.it", "1239567890", "--");
-
-g1.then((id)=>{
-    model.createCampo(id, "Campetto dei fioi", "via del lago duria 7", "38122", "Trento", "TN", 20, 24);
-    model.createCampo(id, "Campetto Villazzano", "via del lago nia 23", "38123", "Villazzano", "TN", 25, 12);
-})
-g2.then((id)=>{
-    model.createCampo(id, "Campo via Mestre", "via mestre 34", "38102", "Pergine Valsugana", "TN", 20, 48);
-    model.createCampo(id, "Oratorio Arsiè", "via del lago duria 7", "36142", "Arsiè", "TN", 20, 24);
-})
-g3.then((id)=>{
-    model.createCampo(id, "Campetto fango", "via del novello 13", "38234", "Trento", "TN", 20, 36);
-})*/
-
