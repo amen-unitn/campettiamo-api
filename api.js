@@ -4,13 +4,8 @@ var app = express();
 app.use(express.json())
 var db = require('./db-model');
 
-const port = 9080;
-
 const model = new db.Model();
 
-app.listen(port, () => {
-    console.log(`Listening on port ${port}`)
-})
 
 app.get('/api/v1/campi', function(req, res) {
     model.getListaCampi().then((campi)=>{
@@ -99,4 +94,8 @@ app.get('/api/v1/CampiEntroRaggio', (req, res) => {
     }).catch(err=>{
         res.send("error")
     })
-});
+})
+
+
+// used for testing
+module.exports = app
