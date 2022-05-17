@@ -1,10 +1,9 @@
 neo4j = require('neo4j-driver')
 axios = require('axios');
+//modulo per usare .env file
+require('dotenv').config() 
 
-const user = "neo4j"
-const password = "sxuWw-WxadX0Kq5WwinvL-8qYiMmD9wApTgEUhgu0jE"
-const uri = "neo4j+s://79126456.databases.neo4j.io"
-driver = neo4j.driver(uri, neo4j.auth.basic(user, password))
+driver = neo4j.driver(process.env.uri, neo4j.auth.basic(process.env.user, process.env.password))
 
 const baseGmapsUrl = "https://maps.googleapis.com/maps/api/geocode/json?address="
 const gmapsKey = "AIzaSyAHvVUqzSD7mFoyoAQgur7dvKzL1Luz28s"
@@ -167,11 +166,76 @@ class DBModel {
         return result.summary.counters._stats.nodesDeleted > 0
     }
 
+
+
+    async getCampiPerNome (nome){
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (c:Campo) WHERE c.nome = $nome RETURN c')
+            dbResult.records.forEach((record)=>{
+                result.push(record.get("c").properties)
+            })
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+
+    async getCampiPerLuogo(luogo){
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (c:Campo) WHERE (c.citta = $luogo OR c.provincia = $luogo) RETURN c')
+            dbResult.records.forEach((record)=>{
+                result.push(record.get("c").properties)
+            })
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    } 
+
+
+// la matematica è presa da qui https://www.geeksforgeeks.org/program-distance-two-points-earth/
+// in particolare usiamo questa formula Distance  = 6372,795477598(raggio terrestre in km) * arccos[(sin(lat1) * sin(lat2)) + cos(lat1) * cos(lat2) * cos(long2 – long1)]
+// il raggio è da passare alla fuznione in km , le coordinate in formato  ( +/-)  xxx.yyyyyyy
+
+    async getCampiNelRAggio(latitudine_utente, longitudine_utente, raggio){
+        const session = driver.session()
+        let lat_rad= latitudine_utente/57.29577951
+        let long_rad= longitudine_utente/57.29577951
+
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (c:Campo) WHERE (( 6372,795477598 * acos((sin($lat_rad) * sin(c.latitude/57.29577951)) + cos($lat_rad) * cos(c.latitude/57.29577951) * cos((c.longitude/57.29577951)– $long_rad)) ) <= $raggio  ) RETURN c')
+            dbResult.records.forEach((record)=>{
+                result.push(record.get("c").properties)
+            })
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    } 
+
     async onexit () {
         // on application exit:
         await driver.close()
     }
     
 }
+
+
+
+
 
 module.exports.Model = DBModel
