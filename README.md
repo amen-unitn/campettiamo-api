@@ -1,7 +1,7 @@
 # Campettiamo Wiki
 
 Il gruppo "AMEN", sviluppatore del progetto Campettiamo, è composto dai seguenti membri:
-- [Alex Callegaro]()
+- [Alex Callegaro](https://github.com/ale-0x)
 - [Mattia Franzin](https://github.com/Mattia2700)
 - [Enrico Stradiotto](https://github.com/StradeUni)
 - [Nicola Bernardi](https://github.com/nicolabernardi)
