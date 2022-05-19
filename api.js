@@ -162,7 +162,7 @@ app.get('/api/v1/campi-nome', (req, res) => {
 // router cerca campi per luogo (trova prima le coordinate geografiche del luogo)
 app.get('/api/v1/campi-luogo', async (req, res) => {
 	
-    if(req.query.luogo == undefined || req.query.luogo == null || req.query.raggio == undefined || req.query.raggio == null || isNaN(parseFloat(req.query.raggio))){
+    if(req.query.luogo == undefined || req.query.luogo == null || req.query.luogo == '' || req.query.raggio == undefined || req.query.raggio == null || isNaN(parseFloat(req.query.raggio))){
     	res.json({success:false, message:"Luogo or raggio not provided"})
     }else{
     	coord = await model.getCoordinates(req.query.luogo)
