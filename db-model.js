@@ -106,12 +106,12 @@ class DBModel {
         return result
     }
 
-    async getCampo(idCampo) {
+    async getCampo(id) {
         const session = driver.session()
         let result = null
         try {
             let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}) ' +
-                'RETURN c', { "idCampo": idCampo })
+                'RETURN c', { "idCampo": id })
             if (dbResult.records && dbResult.records[0])
                 result = dbResult.records[0].get("c").properties;
 
@@ -123,16 +123,15 @@ class DBModel {
         return result
     }
 
-    async editCampo(idGestore, idCampo, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
+    async editCampo(id, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
         let result = false
         let coord = await this.getCoordinates(indirizzo, cap, citta, provincia)
         try {
-            let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})<-[:AFFITTA]-(g:Gestore {id: $idGestore}) ' +
+            let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}) ' +
                 'SET c.nome = $nome, c.indirizzo = $indirizzo, c.cap = $cap, c.citta = $citta, c.provincia = $provincia, ' +
                 ' c.sport = $sport, c.tariffa = $tariffa, c.prenotaEntro = $prenotaEntro, c.lat = $lat, c.lng = $lng', {
-                "idCampo": idCampo,
-                "idGestore": idGestore,
+                "idCampo": id,
                 "nome": nome,
                 "indirizzo": indirizzo,
                 "cap": cap,
@@ -153,12 +152,12 @@ class DBModel {
         return result
     }
 
-    async deleteCampo(idGestore, idCampo) {
+    async deleteCampo(id) {
         const session = driver.session()
         let result = []
         try {
-            result = await session.run('MATCH (c:Campo {id: $idCampo})<-[:AFFITTA]-(g:Gestore {id: $idGestore}) ' +
-                'DETACH DELETE c', { "idCampo": idCampo, "idGestore": idGestore })
+            result = await session.run('MATCH (c:Campo {id: $idCampo}) ' +
+                'DETACH DELETE c', { "idCampo": id })
 
         } catch (error) {
             console.log(error)
@@ -209,7 +208,7 @@ class DBModel {
     // in particolare usiamo questa formula Distance  = 6372,795477598(raggio terrestre in km) * arccos[(sin(lat1) * sin(lat2)) + cos(lat1) * cos(lat2) * cos(long2 – long1)]
     // il raggio è da passare alla fuznione in km , le coordinate in formato  ( +/-)  xxx.yyyyyyy
 
-    async getCampiNelRAggio(latitudine_utente, longitudine_utente, raggio) {
+    async getCampiNelRaggio(latitudine_utente, longitudine_utente, raggio) {
         const session = driver.session()
         let lat_rad = latitudine_utente / 57.29577951
         let long_rad = longitudine_utente / 57.29577951
@@ -229,7 +228,7 @@ class DBModel {
         return result
     }
 
-    async createSlot(idGestore, idCampo, data, oraInizio, oraFine) {
+    async createSlot(idCampo, data, oraInizio, oraFine) {
         let [year, month, day] = data.split("-").map(Number)    // split date by "-" and convert to number
         let date = new Date(data)   // check if date exists
 
@@ -237,12 +236,11 @@ class DBModel {
             const session = driver.session()
             let result = false
             try {
-                let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})<-[:AFFITTA]-(g:Gestore {id: $idGestore}) ' +
+                let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}) ' +
                     'CREATE (s:Slot {data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}) ' +
                     'CREATE (c)-[:HAS_SLOT]->(s) ' +
                     'RETURN s', {
                     "idCampo": idCampo,
-                    "idGestore": idGestore,
                     "data": data,
                     "oraInizio": oraInizio,
                     "oraFine": oraFine

@@ -19,8 +19,8 @@ app.get('/api/v1/campo/:id', function (req, res) {
     })
 });
 
-app.delete('/api/v1/gestore/:idGestore/campo/:idCampo', function (req, res) {
-    model.deleteCampo(req.params.idGestore, req.params.idCampo).then((result) => {
+app.delete('/api/v1/campo/:id', function (req, res) {
+    model.deleteCampo(req.params.id).then((result) => {
         if (result)
             res.json({ success: result, message: "Deleted" })
         else
@@ -28,9 +28,9 @@ app.delete('/api/v1/gestore/:idGestore/campo/:idCampo', function (req, res) {
     })
 });
 
-app.post('/api/v1/gestore/:idGestore/campo/', function (req, res) {
+app.post('/api/v1/campo/', function (req, res) {
     if (checkCampoProperties(req.body)) {
-        model.createCampo(req.params.idGestore, req.body.nome, req.body.indirizzo, req.body.cap,
+        model.createCampo(req.body.idGestore, req.body.nome, req.body.indirizzo, req.body.cap,
             req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
                 res.json({ id: result })
             })
@@ -40,9 +40,9 @@ app.post('/api/v1/gestore/:idGestore/campo/', function (req, res) {
 
 });
 
-app.put('/api/v1/gestore/:idGestore/campo/:idCampo', function (req, res) {
+app.put('/api/v1/campo/:id', function (req, res) {
     if (checkCampoProperties(req.body)) {
-        model.editCampo(req.params.idGestore, req.params.idCampo, req.body.nome, req.body.indirizzo, req.body.cap,
+        model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
             req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
                 if (result)
                     res.json({ success: result, message: "Updated" })
@@ -55,9 +55,9 @@ app.put('/api/v1/gestore/:idGestore/campo/:idCampo', function (req, res) {
 
 });
 
-app.post('/api/v1/gestore/:idGestore/campo/:idCampo/slot', function (req, res) {
+app.post('/api/v1/campo/:idCampo/slot', function (req, res) {
     if (checkSlotProperties(req.body)) {
-        data = model.createSlot(req.params.idGestore, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+        data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
             if (result)
                 res.json({ success: result, message: "Slot created" })
             else
@@ -88,7 +88,7 @@ app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
     })
 });
 
-app.delete('/api/v1/gestore/:idCampo/slot/:data', function (req, res) { // add oraInizio and oraFine
+app.delete('/api/v1/campo/:idCampo/slot/:data', function (req, res) { // add oraInizio and oraFine
     model.deleteSlot(req.params.idCampo, req.params.data).then((result) => {
         if (result)
             res.json({ success: result, message: "Deleted" })
