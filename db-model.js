@@ -6,9 +6,6 @@ require('dotenv').config()
 
 driver = neo4j.driver(process.env.uri, neo4j.auth.basic(process.env.user, process.env.password))
 
-const baseGmapsUrl = "https://maps.googleapis.com/maps/api/geocode/json?address="
-const gmapsKey = "AIzaSyAHvVUqzSD7mFoyoAQgur7dvKzL1Luz28s"
-
 class DBModel {
 
     async getCoordinates(indirizzo, cap, citta, provincia) {
@@ -18,7 +15,7 @@ class DBModel {
     
     async getCoordinates(address) {
         address = address.replaceAll(" ", "+")
-    	let url = baseGmapsUrl + address + "&key=" + gmapsKey
+    	let url = process.env.baseGmapsUrl + address + "&key=" + process.env.gmapsKey
         const response = await axios.get(url)
         if (response.data.results.length > 0)
             return response.data.results[0].geometry.location

@@ -3,6 +3,8 @@ var express = require('express');
 var app = express();
 app.use(express.json())
 var db = require('./db-model');
+const Path = require('node:path');
+var Fs = require('node:fs');
 
 const model = new db.Model();
 
@@ -191,6 +193,40 @@ app.get('/api/v1/campi-raggio', (req, res) => {
         })
     }
 
+})
+
+app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
+    model.getCampo(req.params.idCampo).then(async (campo) => {
+    
+    
+    const path = Path.resolve(__dirname, 'tmp', 'streetview'+Date.now()+'.jpg')
+    
+        if(campo === null){
+            res.json({success:false, message:"Campo not found"})
+        }else{
+            const size = "800x800"
+    	    let url = process.env.baseStreetViewUrl + "?size=" + size + "&location=" + campo.lat + "," + campo.lng + "&fov=80&heading=70&pitch=0&key=" + process.env.gmapsKey
+            let response_strview = await axios({url,
+                method: 'GET',
+                responseType: 'stream'})
+                
+            const writer = Fs.createWriteStream(path)
+            response_strview.data.pipe(writer)
+            writer.on('finish', () => {
+            	res.download(path, ()=>{
+            	    //after sending to client, delete picture
+            	    Fs.unlink(path, ()=>{})
+            	})
+            })
+            writer.on('error', (err) => {
+            	res.json({success:false, message:err})
+            })
+
+        }
+    }).catch((err) => {
+        console.log(err)
+        res.json({success:false, message:"Error while downloading image from Street View"})
+    })
 })
 
 // const test = () => {
