@@ -236,17 +236,34 @@ class DBModel {
             const session = driver.session()
             let result = false
             try {
-                let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}) ' +
-                    'CREATE (s:Slot {data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}) ' +
-                    'CREATE (c)-[:HAS_SLOT]->(s) ' +
+                let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
                     'RETURN s', {
                     "idCampo": idCampo,
-                    "data": data,
-                    "oraInizio": oraInizio,
-                    "oraFine": oraFine
                 })
-                // print slot properties
-                result = dbResult.records[0].get("s").properties
+
+                let slots = []
+                dbResult.records.forEach((record) => {
+                    slots.push(new slot.Slot(record.get("s").properties.data.toString(), record.get("s").properties.oraInizio, record.get("s").properties.oraFine))
+                })
+                // check if new slot is not overlapping with existing slots
+                let overlapping = false
+                for (let i = 0; i < slots.length && !overlapping; i++) {
+                    if (slots[i].data == data && (oraInizio >= slots[i].oraInizio && oraInizio < slots[i].oraFine || oraFine > slots[i].oraInizio && oraFine <= slots[i].oraFine)) {
+                        overlapping = true
+                    }
+                }
+                if (!overlapping) {
+                    dbResult = await session.run('MATCH (c:Campo {id: $idCampo}) ' +
+                        'CREATE (c)-[:HAS_SLOT]->(s: Slot {data: $data, oraInizio: $oraInizio, oraFine: $oraFine}) ' +
+                        'RETURN s',
+                        {
+                            "idCampo": idCampo,
+                            "data": data,
+                            "oraInizio": oraInizio,
+                            "oraFine": oraFine
+                        })
+                    result = dbResult.summary.counters._containsUpdates
+                }
             } catch (error) {
                 console.log(error)
             } finally {
@@ -283,18 +300,30 @@ class DBModel {
         return result
     }
 
-    async deleteSlot(idCampo, data) {
+    async deleteSlot(idCampo, data, oraInizio, oraFine) {
         const session = driver.session()
-        let result = []
+        let result = null
+        let prenotazioni = null
         try {
-            result = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot {data: $data}) ' +
-                'DETACH DELETE s', { "idCampo": idCampo, "data": data })
+            // check prenotazioni campo
+            prenotazioni = await session.run('MATCH ()-[p:PRENOTA]->(c:Campo {id: $idCampo}) ' +
+                'WHERE p.data = date($data) AND (p.oraInizio >= time($oraInizio) OR p.oraFine <= time($oraFine))' +
+                'RETURN p', { "idCampo": idCampo, "data": data, "oraInizio": oraInizio, "oraFine": oraFine })
+            console.log(prenotazioni)
+            if (prenotazioni.records.length == 0) {
+                result = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot {data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}) ' +
+                    'DETACH DELETE s', { "idCampo": idCampo, "data": data, "oraInizio": oraInizio, "oraFine": oraFine })
+            }
         } catch (error) {
             console.log(error)
         } finally {
             await session.close()
         }
-        return result.summary.counters._stats.relationshipsDeleted > 0
+        // check if result has updates
+        return {
+            "success": prenotazioni.records.length == 0 ? true : false,
+            "message": prenotazioni.records.length == 0 ? "Slot deleted" : "Slot not deleted because there are prenotazioni"
+        }
     }
 
     async newPrenotazione(idUtente, idCampo, data, oraInizio, oraFine) { //TODO: check if slot is available

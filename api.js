@@ -55,20 +55,38 @@ app.put('/api/v1/campo/:id', function (req, res) {
 
 });
 
+// slots
+
 app.post('/api/v1/campo/:idCampo/slot', function (req, res) {
     if (checkSlotProperties(req.body)) {
         data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
             if (result)
                 res.json({ success: result, message: "Slot created" })
             else
-                res.json({ success: result, message: "Cannot create slot" })
+                res.json({ success: result, message: "Slot overlaps with another" })
         })
     } else {
         res.json({ "success": false, "message": "Not all required fields were given." })
     }
 });
 
-app.get('/api/v1/campo/:idCampo/data/:data', function (req, res) {
+app.delete('/api/v1/campo/:idCampo/slot', function (req, res) { // add oraInizio and oraFine
+    if (checkSlotProperties(req.body)) {
+        model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+            res.json({ success: result.success, message: result.message })
+        })
+    } else {
+        res.json({ "success": false, "message": "Not all required fields were given." })
+    }
+});
+
+app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
+    model.getSlots(req.params.idCampo).then((result) => {
+        res.json(result)
+    })
+});
+
+app.get('/api/v1/campo/:idCampo/slot/:data', function (req, res) {
     let [anno, mese, giorno] = req.params.data.split('-')
     // check if giorno is passed or not
     if (giorno == undefined) {
@@ -82,20 +100,8 @@ app.get('/api/v1/campo/:idCampo/data/:data', function (req, res) {
     }
 });
 
-app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
-    model.getSlots(req.params.idCampo).then((result) => {
-        res.json(result)
-    })
-});
-
-app.delete('/api/v1/campo/:idCampo/slot/:data', function (req, res) { // add oraInizio and oraFine
-    model.deleteSlot(req.params.idCampo, req.params.data).then((result) => {
-        if (result)
-            res.json({ success: result, message: "Deleted" })
-        else
-            res.json({ success: result, message: "Slot not found" })
-    })
-});
+// put method is not implemented because it wouldn't be useful specify both old and new values
+// you can delete the old slot and create a new one
 
 app.post('/api/v1/campo/:idCampo/prenotazione', function (req, res) {
     if (checkPrenotazioneProperties(req.body)) {
