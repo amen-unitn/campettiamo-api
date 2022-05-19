@@ -229,6 +229,15 @@ app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
     })
 })
 
+// router ottiene lista delle prenotazioni
+app.get('/api/v1/campo/:idCampo/prenotazioni', (req, res) => {
+    model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
+        res.json(prenotazioni)
+    }).catch(err => {
+        res.json({success:false, message:"Error"})
+    })
+})
+
 // const test = () => {
 //     let slot = {
 //         oraInizio: "12:00",

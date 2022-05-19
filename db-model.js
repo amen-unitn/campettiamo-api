@@ -449,6 +449,27 @@ class DBModel {
         return result
     }
 
+    // Get the list of all reservations of a field given the id of the field
+    async getListaPrenotazioni(idCampo) {
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p', {idCampo : idCampo})
+            dbResult.records.forEach((record) => {
+                result.push({
+                    "data" : record.get("p").properties.data.toString(),
+                    "oraInizio" : record.get("p").properties.oraInizio.toString(),
+                    "oraFine" : record.get("p").properties.oraFine.toString()
+                })
+            })
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+
     // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
     //     const session = driver.session()
     //     let result = []
