@@ -13,13 +13,17 @@ class DBModel {
 
     async getCoordinates(indirizzo, cap, citta, provincia) {
         let address = indirizzo + " " + cap + " " + citta + " " + provincia
+        return getCoordinates(address)
+    }
+    
+    async getCoordinates(address) {
         address = address.replaceAll(" ", "+")
-        let url = baseGmapsUrl + address + "&key=" + gmapsKey
+    	let url = baseGmapsUrl + address + "&key=" + gmapsKey
         const response = await axios.get(url)
         if (response.data.results.length > 0)
             return response.data.results[0].geometry.location
         else return { lat: -1, lng: -1 }
-        //return an object {lat:value, lng:value}
+        //returns an object {lat:value, lng:value}
     }
 
     async createUtenteBase(nome, cognome, email, paypal, telefono, hash, tipologia) {
@@ -173,7 +177,7 @@ class DBModel {
         const session = driver.session()
         let result = []
         try {
-            let dbResult = await session.run('MATCH (c:Campo {nome: $nome}) RETURN c', { "nome": nome })
+            let dbResult = await session.run('MATCH (c:Campo) WHERE c.nome =~ $cerca RETURN c', { "cerca": "(?i)^.*" + nome + ".*" })
             dbResult.records.forEach((record) => {
                 result.push(record.get("c").properties)
             })
@@ -186,36 +190,17 @@ class DBModel {
         return result
     }
 
-    async getCampiPerLuogo(luogo) {
-        const session = driver.session()
-        let result = []
-        try {
-            let dbResult = await session.run('MATCH (c:Campo) WHERE (c.citta = $luogo OR c.provincia = $luogo) RETURN c')
-            dbResult.records.forEach((record) => {
-                result.push(record.get("c").properties)
-            })
-
-        } catch (error) {
-            console.log(error)
-        } finally {
-            await session.close()
-        }
-        return result
-    }
 
 
     // la matematica è presa da qui https://www.geeksforgeeks.org/program-distance-two-points-earth/
     // in particolare usiamo questa formula Distance  = 6372,795477598(raggio terrestre in km) * arccos[(sin(lat1) * sin(lat2)) + cos(lat1) * cos(lat2) * cos(long2 – long1)]
-    // il raggio è da passare alla fuznione in km , le coordinate in formato  ( +/-)  xxx.yyyyyyy
+    // il raggio è da passare alla funzione in km , le coordinate in formato  ( +/-)  xxx.yyyyyyy
 
     async getCampiNelRaggio(latitudine_utente, longitudine_utente, raggio) {
         const session = driver.session()
-        let lat_rad = latitudine_utente / 57.29577951
-        let long_rad = longitudine_utente / 57.29577951
-
         let result = []
         try {
-            let dbResult = await session.run('MATCH (c:Campo) WHERE (( 6372,795477598 * acos((sin($lat_rad) * sin(c.latitude/57.29577951)) + cos($lat_rad) * cos(c.latitude/57.29577951) * cos((c.longitude/57.29577951)– $long_rad)) ) <= $raggio  ) RETURN c')
+            let dbResult = await session.run('MATCH (c:Campo) WHERE (6371 * acos((sin(c.lat/57.29577951)*sin($lat/57.29577951)) + cos(c.lat/57.29577951)*cos($lat/57.29577951)*cos($lng/57.29577951-c.lng/57.29577951))) <= $raggio RETURN c', {"lat":latitudine_utente, "lng":longitudine_utente, "raggio":raggio})
             dbResult.records.forEach((record) => {
                 result.push(record.get("c").properties)
             })

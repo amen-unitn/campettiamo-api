@@ -143,37 +143,54 @@ function checkCampoProperties(reqBody) {
         reqBody.provincia != undefined && reqBody.provincia != null &&
         reqBody.sport != undefined && reqBody.sport != null &&
         reqBody.tariffa != undefined && reqBody.tariffa != null &&
-        reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null
+        reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null &&
+        reqBody.idGestore != undefined && reqBody.idGestore != null
 }
 
 
 //router cerca campi per nome 
-app.post('/api/v1/CampiPerNome', (req, res) => {
+app.get('/api/v1/campi-nome', (req, res) => {
 
-    model.getCampiPerNome(req.body.nomeCampo).then((campi) => {
-        res.send(campi.json())
+    model.getCampiPerNome(req.query.nome).then((campi) => {
+        res.json(campi)
     }).catch(err => {
-        response.send("error")
+        res.json({success:false, message:"Error"})
     })
 })
-// router cerca campi per luogo 
-app.post('/api/v1/CampiPerluogo', (req, res) => {
+// router cerca campi per luogo (trova prima le coordinate geografiche del luogo)
+app.get('/api/v1/campi-luogo', async (req, res) => {
+	
+    if(req.query.luogo == undefined || req.query.luogo == null || req.query.raggio == undefined || req.query.raggio == null || isNaN(parseFloat(req.query.raggio))){
+    	res.json({success:false, message:"Luogo or raggio not provided"})
+    }else{
+    	coord = await model.getCoordinates(req.query.luogo)
 
-    model.getCampiPerLuogo(req.body.luogo).then((campi) => {
-        res.send(campi.json())
-    }).catch(err => {
-        res.send("error")
-    })
+        model.getCampiNelRaggio(coord.lat, coord.lng, parseFloat(req.query.raggio)).then((campi) => {
+            res.json(campi)
+        }).catch(err => {
+            res.json({success:false, message:"Error"})
+        })
+    }
+
 })
 
-// router cerca campi in un  raggio
-app.post('/api/v1/CampiEntroRaggio', (req, res) => {
+// router cerca campi in un raggio
+app.get('/api/v1/campi-raggio', (req, res) => {
 
-    model.getCampiNelRAggio(req.body.lat_utente, req.body.long_utente, req.body.raggio).then((campi) => {
-        res.send(campi.json())
-    }).catch(err => {
-        res.send("error")
-    })
+    lat = parseFloat(req.query.lat)
+    lng = parseFloat(req.query.lng)
+    raggio = parseFloat(req.query.raggio)
+    
+    if(isNaN(lat) || isNaN(lng) || isNaN(raggio)){
+    	res.json({success:false, message:"Error on finding data"})
+    }else{
+    	model.getCampiNelRaggio(parseFloat(req.query.lat), parseFloat(req.query.lng), parseFloat(req.query.raggio)).then((campi) => {
+            res.json(campi)
+        }).catch(err => {
+            res.json({success:false, message:"Error"})
+        })
+    }
+
 })
 
 // const test = () => {
