@@ -10,7 +10,7 @@ class DBModel {
 
     async getCoordinates(indirizzo, cap, citta, provincia) {
         let address = indirizzo + " " + cap + " " + citta + " " + provincia
-        return getCoordinates(address)
+        return await getCoordinates(address)
     }
     
     async getCoordinates(address) {
