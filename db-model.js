@@ -454,12 +454,13 @@ class DBModel {
         const session = driver.session()
         let result = []
         try {
-            let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p', {idCampo : idCampo})
+            let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p, u', {idCampo : idCampo})
             dbResult.records.forEach((record) => {
                 result.push({
                     "data" : record.get("p").properties.data.toString(),
                     "oraInizio" : record.get("p").properties.oraInizio.toString(),
-                    "oraFine" : record.get("p").properties.oraFine.toString()
+                    "oraFine" : record.get("p").properties.oraFine.toString(),
+                    "telefono" : record.get("u").properties.telefono.toString()
                 })
             })
         } catch (error) {
