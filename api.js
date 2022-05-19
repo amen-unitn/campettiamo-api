@@ -5,6 +5,7 @@ app.use(express.json())
 var db = require('./db-model');
 const Path = require('node:path');
 var Fs = require('node:fs');
+const req = require('express/lib/request');
 
 const model = new db.Model();
 
@@ -114,7 +115,7 @@ app.post('/api/v1/campo/:idCampo/prenotazione', function (req, res) {
                 res.json({ success: false, message: "Cannot create prenotazione" })
         })
     } else {
-        res.json({ "success": false, "message": "Not all required fields were given." })
+        res.json({ "success": false, "message": "Not all required fields were given or prenotazione in the past." })
     }
 });
 
@@ -131,10 +132,19 @@ function checkSlotProperties(reqBody) {
 }
 
 function checkPrenotazioneProperties(reqBody) {
+    const today = new Date();
+    const todayDate = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+    const prenotazione = new Date(reqBody.data+'T'+reqBody.oraInizio+':00');
+    const prenotazioneDate = prenotazione.getFullYear() + '-' + (prenotazione.getMonth() + 1) + '-' + prenotazione.getDate();
+
     return reqBody.idUtente != undefined && reqBody.idUtente != null &&
         reqBody.data != undefined && reqBody.data != null &&
         reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
-        reqBody.oraFine != undefined && reqBody.oraFine != null
+        reqBody.oraFine != undefined && reqBody.oraFine != null &&
+        // check if data, oraInizio and oraFine are not in the past
+        (prenotazioneDate > todayDate || 
+        prenotazioneDate == todayDate && (prenotazione.getHours() > today.getHours() ||
+        prenotazione.getHours() == today.getHours() && prenotazione.getMinutes() > today.getMinutes()))
 }
 
 function checkCampoProperties(reqBody) {

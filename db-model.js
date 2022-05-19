@@ -12,10 +12,10 @@ class DBModel {
         let address = indirizzo + " " + cap + " " + citta + " " + provincia
         return await getCoordinates(address)
     }
-    
+
     async getCoordinates(address) {
         address = address.replaceAll(" ", "+")
-    	let url = process.env.baseGmapsUrl + address + "&key=" + process.env.gmapsKey
+        let url = process.env.baseGmapsUrl + address + "&key=" + process.env.gmapsKey
         const response = await axios.get(url)
         if (response.data.results.length > 0)
             return response.data.results[0].geometry.location
@@ -197,7 +197,7 @@ class DBModel {
         const session = driver.session()
         let result = []
         try {
-            let dbResult = await session.run('MATCH (c:Campo) WHERE (6371 * acos((sin(c.lat/57.29577951)*sin($lat/57.29577951)) + cos(c.lat/57.29577951)*cos($lat/57.29577951)*cos($lng/57.29577951-c.lng/57.29577951))) <= $raggio RETURN c', {"lat":latitudine_utente, "lng":longitudine_utente, "raggio":raggio})
+            let dbResult = await session.run('MATCH (c:Campo) WHERE (6371 * acos((sin(c.lat/57.29577951)*sin($lat/57.29577951)) + cos(c.lat/57.29577951)*cos($lat/57.29577951)*cos($lng/57.29577951-c.lng/57.29577951))) <= $raggio RETURN c', { "lat": latitudine_utente, "lng": longitudine_utente, "raggio": raggio })
             dbResult.records.forEach((record) => {
                 result.push(record.get("c").properties)
             })
@@ -320,6 +320,8 @@ class DBModel {
                 })
                 if (slot) {
                     let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}), (u:Utente {id: $idUtente}) ' +
+                        // verifica se è troppo tardi per prenotare, vedendo se data e oraInizio che voglio prenotare - prenotaEntro ore > data e ora attuale
+                        'WHERE date($data) - date(datetime()) > 0 AND date($data) - date(datetime()) < $prenotaEntro ' +
                         'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}]->(c) ' +
                         'RETURN p.id', {
                         "idCampo": idCampo,
@@ -395,11 +397,13 @@ class DBModel {
 
             let prenotazioni = await session.run('MATCH (u:Utente)-[p:PRENOTA]->(c:Campo {id: $idCampo}) ' +
                 'WHERE p.data=date($data) ' +
-                'RETURN p.oraInizio, p.oraFine',
+                'RETURN c.prenotaEntro, p.oraInizio, p.oraFine',
                 {
                     "idCampo": idCampo,
                     "data": data
                 })
+
+            const prenotaEntro = prenotazioni.records[0].get("c.prenotaEntro")
 
             prenotazioni.records.forEach((record) => {
                 // search which slot is associated to record
@@ -421,8 +425,10 @@ class DBModel {
                     }
                 }
             })
-
-            // console.log(slots)
+            slots = slots.filter(s => {
+                let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - new Date().getTime()) / 3600000
+                return diff > prenotaEntro
+            })
         }
         catch (error) {
             console.log(error)
@@ -454,13 +460,13 @@ class DBModel {
         const session = driver.session()
         let result = []
         try {
-            let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p, u', {idCampo : idCampo})
+            let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p, u', { idCampo: idCampo })
             dbResult.records.forEach((record) => {
                 result.push({
-                    "data" : record.get("p").properties.data.toString(),
-                    "oraInizio" : record.get("p").properties.oraInizio.toString(),
-                    "oraFine" : record.get("p").properties.oraFine.toString(),
-                    "telefono" : record.get("u").properties.telefono.toString()
+                    "data": record.get("p").properties.data.toString(),
+                    "oraInizio": record.get("p").properties.oraInizio.toString(),
+                    "oraFine": record.get("p").properties.oraFine.toString(),
+                    "telefono": record.get("u").properties.telefono.toString()
                 })
             })
         } catch (error) {
