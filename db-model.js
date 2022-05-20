@@ -477,6 +477,27 @@ class DBModel {
         return result
     }
 
+    // Get the list of all manager's fields given the id of the manager
+    async getListaCampiGestore(idGestore) {
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (g : Gestore {id : $idGestore}) - [a : AFFITTA] -> (c : Campo) RETURN c', { idGestore: idGestore })
+            dbResult.records.forEach((record) => {
+                result.push({
+                    "nome": record.get("c").properties.nome.toString(),
+                    "citta": record.get("c").properties.citta.toString(),
+                    "indirizzo": record.get("c").properties.indirizzo.toString()
+                })
+            })
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+    
     // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
     //     const session = driver.session()
     //     let result = []
