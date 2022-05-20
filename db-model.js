@@ -477,6 +477,30 @@ class DBModel {
         return result
     }
 
+    // Get the list of all reservations given the id of the user
+    async getListaPrenotazioniUtente(idUtente) {
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA] -> (c : Campo) RETURN c, p', { idUtente: idUtente })
+            dbResult.records.forEach((record) => {
+                result.push({
+                    "data": record.get("p").properties.data.toString(),
+                    "oraInizio": record.get("p").properties.oraInizio.toString(),
+                    "oraFine": record.get("p").properties.oraFine.toString(),
+                    "nome": record.get("c").properties.nome.toString(),
+                    "citta": record.get("c").properties.citta.toString(),
+                    "indirizzo": record.get("c").properties.indirizzo.toString()
+                })
+            })
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+
     // Get the list of all manager's fields given the id of the manager
     async getListaCampiGestore(idGestore) {
         const session = driver.session()

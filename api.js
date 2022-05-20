@@ -248,6 +248,15 @@ app.get('/api/v1/campo/:idCampo/prenotazioni', (req, res) => {
     })
 })
 
+// router ottiene lista delle prenotazioni in base all'ID dell'utente
+app.get('/api/v1/utente/:idUtente/mie-prenotazioni', (req, res) => {
+    model.getListaPrenotazioniUtente(req.params.idUtente).then((prenotazioni) => {
+        res.json(prenotazioni)
+    }).catch(err => {
+        res.json({success:false, message:"Error"})
+    })
+})
+
 // router ottiene lista dei campi del gestore
 app.get('/api/v1/campo/:idGestore/miei-campi', (req, res) => {
     model.getListaCampiGestore(req.params.idGestore).then((campi) => {
