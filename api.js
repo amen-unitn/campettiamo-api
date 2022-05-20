@@ -248,6 +248,15 @@ app.get('/api/v1/campo/:idCampo/prenotazioni', (req, res) => {
     })
 })
 
+// router ottiene lista dei campi del gestore
+app.get('/api/v1/campo/:idGestore/miei-campi', (req, res) => {
+    model.getListaCampiGestore(req.params.idGestore).then((campi) => {
+        res.json(campi)
+    }).catch(err => {
+        res.json({success:false, message:"Error"})
+    })
+})
+
 // const test = () => {
 //     let slot = {
 //         oraInizio: "12:00",
