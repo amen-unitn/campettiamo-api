@@ -22,18 +22,18 @@ class DBModel {
         else return { lat: -1, lng: -1 }
         //returns an object {lat:value, lng:value}
     }
-    
-    async getAccount(email){
-    	const session = driver.session()
+
+    async getAccount(email) {
+        const session = driver.session()
         let result = null
         try {
-            let dbResult = await session.run('MATCH (a:Account {email:$email}) RETURN a, labels(a)', {"email":email})
+            let dbResult = await session.run('MATCH (a:Account {email:$email}) RETURN a, labels(a)', { "email": email })
             if (dbResult.records && dbResult.records[0])
                 result = dbResult.records[0].get("a").properties;
-                let labels = dbResult.records[0].get("a").labels;
-                let index = labels.indexOf("Account");
-                delete labels[index];
-                result.tipologia = labels[0];
+            let labels = dbResult.records[0].get("a").labels;
+            let index = labels.indexOf("Account");
+            delete labels[index];
+            result.tipologia = labels[0];
         } catch (error) {
             console.log(error)
         } finally {
@@ -231,9 +231,12 @@ class DBModel {
 
     async createSlot(idCampo, data, oraInizio, oraFine) {
         let [year, month, day] = data.split("-").map(Number)    // split date by "-" and convert to number
-        let date = new Date(data)   // check if date exists
+        let [hour, minute] = oraInizio.split(":").map(Number)   // split time by ":" and convert to number
+        let current_datetime = new Date()
+        let slot_datetime = new Date(year, month - 1, day, hour, minute)
+        let diff = (slot_datetime - current_datetime) / 3600000
 
-        if (date.getFullYear() == year && date.getMonth() + 1 == month && date.getDate() == day && oraInizio < oraFine) {
+        if (year==slot_datetime.getFullYear() && month==slot_datetime.getMonth()+1 && day==slot_datetime.getDate() && diff>0) {
             const session = driver.session()
             let result = false
             try {
@@ -255,7 +258,7 @@ class DBModel {
                 }
                 if (!overlapping) {
                     dbResult = await session.run('MATCH (c:Campo {id: $idCampo}) ' +
-                        'CREATE (c)-[:HAS_SLOT]->(s: Slot {data: $data, oraInizio: $oraInizio, oraFine: $oraFine}) ' +
+                        'CREATE (c)-[:HAS_SLOT]->(s: Slot {data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}) ' +
                         'RETURN s',
                         {
                             "idCampo": idCampo,
@@ -327,7 +330,7 @@ class DBModel {
         }
     }
 
-    async newPrenotazione(idUtente, idCampo, data, oraInizio, oraFine) { //TODO: check if slot is available
+    async newPrenotazione(idUtente, idCampo, data, oraInizio, oraFine) {
         const session = driver.session()
         let result = null
         try {
@@ -339,8 +342,6 @@ class DBModel {
                 })
                 if (slot) {
                     let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}), (u:Utente {id: $idUtente}) ' +
-                        // verifica se è troppo tardi per prenotare, vedendo se data e oraInizio che voglio prenotare - prenotaEntro ore > data e ora attuale
-                        'WHERE date($data) - date(datetime()) > 0 AND date($data) - date(datetime()) < $prenotaEntro ' +
                         'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}]->(c) ' +
                         'RETURN p.id', {
                         "idCampo": idCampo,
@@ -376,217 +377,167 @@ class DBModel {
 
             // check if there are slots for each day
             for (let giorno = 0; giorno < giorniLiberi.length; giorno++) {
-                let slots = await this.getAvailableSlots(idCampo, year + "-" + month + "-" + giorniLiberi[giorno])
-                if (slots.length == 0) {
+                let slots = await this.getAvailableSlots(idCampo, year + "-" + month + "-" + giorniLiberi[giorno]) // get slots for each day
+                if (slots.length == 0) { //
                     giorniLiberi.splice(giorno, 1)
                     giorno--
                 }
             }
         }
-        catch (error) {
-            console.log(error)
-        }
+    catch(error) {
+        console.log(error)
+    }
         finally {
-            await session.close()
-        }
-        return giorniLiberi
+    await session.close()
+}
+return giorniLiberi
     }
 
     async getAvailableSlots(idCampo, data) {
-        const session = driver.session()
-        let slots = []
-        try { // to test
-            let slots_campo = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
-                'WHERE s.data=date($data) ' +
-                'RETURN s.oraInizio, s.oraFine ' +
-                'ORDER BY s.oraInizio ',
-                {
-                    "idCampo": idCampo,
-                    "data": data
-                })
-            // iterate over all slots
-            slots_campo.records.forEach((record) => {
-                // get last slot oraFine
-                if (slots.length != 0 && slots[slots.length - 1].oraFine == record.get("s.oraInizio").toString()) {
-                    slots[slots.length - 1].oraFine = record.get("s.oraFine").toString()
-                } else {
-                    slots.push(new slot.Slot(data, record.get("s.oraInizio").toString(), record.get("s.oraFine").toString()))
+    const session = driver.session()
+    let slots = []
+    try { // to test
+
+        const prenotaEntro = await this.get_prenota_entro(idCampo)
+
+        let slots_campo = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
+            'WHERE s.data=date($data) ' +
+            'RETURN s.oraInizio, s.oraFine ' +
+            'ORDER BY s.oraInizio ',
+            {
+                "idCampo": idCampo,
+                "data": data
+            })
+
+        // iterate over all slots
+        slots_campo.records.forEach((record) => {
+            // get last slot oraFine
+            if (slots.length != 0 && slots[slots.length - 1].oraFine == record.get("s.oraInizio").toString()) {
+                slots[slots.length - 1].oraFine = record.get("s.oraFine").toString()
+            } else {
+                slots.push(new slot.Slot(data, record.get("s.oraInizio").toString(), record.get("s.oraFine").toString()))
+            }
+        })
+
+        let prenotazioni = await session.run('MATCH (u:Utente)-[p:PRENOTA]->(c:Campo {id: $idCampo}) ' +
+            'WHERE p.data=date($data) ' +
+            'RETURN p.oraInizio, p.oraFine',
+            {
+                "idCampo": idCampo,
+                "data": data
+            })
+
+        prenotazioni.records.forEach((record) => {
+            // search which slot is associated to record
+            let current_slot = slots.find(s => s.oraInizio <= record.get("p.oraInizio").toString() && record.get("p.oraFine").toString() <= s.oraFine)
+            let index = slots.indexOf(current_slot) // get current_slot index in slots array
+
+            if (current_slot) {
+                // remove slot from array
+                slots.splice(index, 1)
+                let aggiuntoInizio = false
+                if (current_slot.oraInizio != record.get("p.oraInizio").toString()) {
+                    aggiuntoInizio = true
+                    // add new slot
+                    slots.splice(index, 0, new slot.Slot(data, current_slot.oraInizio, record.get("p.oraInizio").toString()))
                 }
-            })
-
-            let prenotazioni = await session.run('MATCH (u:Utente)-[p:PRENOTA]->(c:Campo {id: $idCampo}) ' +
-                'WHERE p.data=date($data) ' +
-                'RETURN c.prenotaEntro, p.oraInizio, p.oraFine',
-                {
-                    "idCampo": idCampo,
-                    "data": data
-                })
-
-            const prenotaEntro = prenotazioni.records[0].get("c.prenotaEntro")
-
-            prenotazioni.records.forEach((record) => {
-                // search which slot is associated to record
-                let current_slot = slots.find(s => s.oraInizio <= record.get("p.oraInizio").toString() && record.get("p.oraFine").toString() <= s.oraFine)
-                let index = slots.indexOf(current_slot) // get current_slot index in slots array
-
-                if (current_slot) {
-                    // remove slot from array
-                    slots.splice(index, 1)
-                    let aggiuntoInizio = false
-                    if (current_slot.oraInizio != record.get("p.oraInizio").toString()) {
-                        aggiuntoInizio = true
-                        // add new slot
-                        slots.splice(index, 0, new slot.Slot(data, current_slot.oraInizio, record.get("p.oraInizio").toString()))
-                    }
-                    if (current_slot.oraFine != record.get("p.oraFine").toString()) {
-                        // add new slot
-                        slots.splice(!aggiuntoInizio ? index : index + 1, 0, new slot.Slot(data, record.get("p.oraFine").toString(), current_slot.oraFine))
-                    }
+                if (current_slot.oraFine != record.get("p.oraFine").toString()) {
+                    // add new slot
+                    slots.splice(!aggiuntoInizio ? index : index + 1, 0, new slot.Slot(data, record.get("p.oraFine").toString(), current_slot.oraFine))
                 }
-            })
-            slots = slots.filter(s => {
-                let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - new Date().getTime()) / 3600000
-                return diff > prenotaEntro
-            })
-        }
-        catch (error) {
-            console.log(error)
-        }
-        finally {
-            await session.close()
-        }
-        return slots
+            }
+        })
+        slots = slots.filter(s => {
+            let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - new Date().getTime()) / 3600000
+            return diff > prenotaEntro
+        })
     }
+    catch (error) {
+        console.log(error)
+    }
+    finally {
+        await session.close()
+    }
+    return slots
+}
 
     async idUtenti() {
-        const session = driver.session()
-        let result = []
-        try {
-            let dbResult = await session.run('MATCH (u:Utente) RETURN u.id AS id')
-            result = dbResult.records.map(record => record.get("id").toString())
-        }
-        catch (error) {
-            console.log(error)
-        }
-        finally {
-            await session.close()
-        }
-        return result
+    const session = driver.session()
+    let result = []
+    try {
+        let dbResult = await session.run('MATCH (u:Utente) RETURN u.id AS id')
+        result = dbResult.records.map(record => record.get("id").toString())
     }
+    catch (error) {
+        console.log(error)
+    }
+    finally {
+        await session.close()
+    }
+    return result
+}
 
     // Get the list of all reservations of a field given the id of the field
     async getListaPrenotazioni(idCampo) {
-        const session = driver.session()
-        let result = []
-        try {
-            let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p, u', { idCampo: idCampo })
-            dbResult.records.forEach((record) => {
-                result.push({
-                    "data": record.get("p").properties.data.toString(),
-                    "oraInizio": record.get("p").properties.oraInizio.toString(),
-                    "oraFine": record.get("p").properties.oraFine.toString(),
-                    "telefono": record.get("u").properties.telefono.toString()
-                })
+    const session = driver.session()
+    let result = []
+    try {
+        let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p, u', { idCampo: idCampo })
+        dbResult.records.forEach((record) => {
+            result.push({
+                "data": record.get("p").properties.data.toString(),
+                "oraInizio": record.get("p").properties.oraInizio.toString(),
+                "oraFine": record.get("p").properties.oraFine.toString(),
+                "telefono": record.get("u").properties.telefono.toString()
             })
-        } catch (error) {
-            console.log(error)
-        } finally {
-            await session.close()
-        }
-        return result
+        })
+    } catch (error) {
+        console.log(error)
+    } finally {
+        await session.close()
     }
+    return result
+}
 
     // Get the list of all manager's fields given the id of the manager
     async getListaCampiGestore(idGestore) {
-        const session = driver.session()
-        let result = []
-        try {
-            let dbResult = await session.run('MATCH (g : Gestore {id : $idGestore}) - [a : AFFITTA] -> (c : Campo) RETURN c', { idGestore: idGestore })
-            dbResult.records.forEach((record) => {
-                result.push({
-                    "nome": record.get("c").properties.nome.toString(),
-                    "citta": record.get("c").properties.citta.toString(),
-                    "indirizzo": record.get("c").properties.indirizzo.toString()
-                })
+    const session = driver.session()
+    let result = []
+    try {
+        let dbResult = await session.run('MATCH (g : Gestore {id : $idGestore}) - [a : AFFITTA] -> (c : Campo) RETURN c', { idGestore: idGestore })
+        dbResult.records.forEach((record) => {
+            result.push({
+                "nome": record.get("c").properties.nome.toString(),
+                "citta": record.get("c").properties.citta.toString(),
+                "indirizzo": record.get("c").properties.indirizzo.toString()
             })
-        } catch (error) {
-            console.log(error)
-        } finally {
-            await session.close()
-        }
-        return result
+        })
+    } catch (error) {
+        console.log(error)
+    } finally {
+        await session.close()
     }
-    
-    // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
-    //     const session = driver.session()
-    //     let result = []
-    //     try {
-    //         let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
-    //             'WHERE s.data.year = toInteger($year) AND s.data.month = toInteger($month) AND s.data.day = toInteger($day) ' +
-    //             'RETURN s.oraInizio, s.oraFine',
-    //             {
-    //                 "idCampo": idCampo,
-    //                 "day": day,
-    //                 "month": month,
-    //                 "year": year
-    //             })
-    //         result = dbResult.records.map(record => {
-    //             return {
-    //                 oraInizio: record.get("s.oraInizio").toString(),
-    //                 oraFine: record.get("s.oraFine").toString()
-    //             }
-    //         })
-    //     }
-    //     catch (error) {
-    //         console.log(error)
-    //     }
-    //     finally {
-    //         await session.close()
-    //     }
-    //     return result
-    // }
+    return result
+}
 
-    // let slot = {
-    //     oraInizio: "12:00",
-    //     oraFine: "16:00",
-    // }
-    // let prenotazioni = [
-    //     {
-    //         oraInizio: "13:00",
-    //         oraFine: "14:00",
-    //     },
-    //     {
-    //         oraInizio: "14:30",
-    //         oraFine: "15:30",
-    //     }
-    // ]
-    // let slotLiberi = []
-    // prenotazioni = prenotazioni.sort((a, b) => {
-    //     return a.oraInizio - b.oraInizio
-    // })
-    // let lastInizio = slot.oraInizio
-    // for (let i = 0; i <= prenotazioni.length; i++) {
-    //     if (i == prenotazioni.length && lastInizio != slot.oraFine) {
-    //         slotLiberi.push({
-    //             oraInizio: lastInizio,
-    //             oraFine: slot.oraFine
-    //         })
-    //     } else {
-    //         if (lastInizio != prenotazioni[i].oraInizio) {
-    //             slotLiberi.push({
-    //                 oraInizio: lastInizio,
-    //                 oraFine: prenotazioni[i].oraInizio
-    //             })
-    //         }
-    //         lastInizio = prenotazioni[i].oraFine
-    //     }
-    // }
-    // console.log(slotLiberi)
+    async get_prenota_entro(idCampo) {
+    const session = driver.session()
+    let result = []
+    try {
+        let dbResult = await session.run('MATCH (c : Campo {id : $idCampo}) RETURN c.prenotaEntro', { idCampo: idCampo })
+        result = dbResult.records.map(record => record.get("c.prenotaEntro").toString())
+    } catch (error) {
+        console.log(error)
+    } finally {
+        await session.close()
+    }
+    return result
+}
 
     async onexit() {
-        // on application exit:
-        await driver.close()
-    }
+    // on application exit:
+    await driver.close()
+}
 
 }
 
