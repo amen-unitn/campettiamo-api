@@ -338,8 +338,9 @@ class DBModel {
             if (avaiableSlots.length > 0) {
                 // find which slot is suitable for given time
                 let slot = avaiableSlots.find(slot => {
-                    return slot.oraInizio <= oraInizio && oraFine <= slot.oraFine
+                    return slot.oraInizio <= oraInizio+':00Z' && oraFine <= slot.oraFine+':00Z'
                 })
+
                 if (slot) {
                     let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}), (u:Utente {id: $idUtente}) ' +
                         'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}]->(c) ' +
