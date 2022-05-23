@@ -22,8 +22,27 @@ class DBModel {
         else return { lat: -1, lng: -1 }
         //returns an object {lat:value, lng:value}
     }
+    
+    async getAccount(email){
+    	const session = driver.session()
+        let result = null
+        try {
+            let dbResult = await session.run('MATCH (a:Account {email:$email}) RETURN a, labels(a)', {"email":email})
+            if (dbResult.records && dbResult.records[0])
+                result = dbResult.records[0].get("a").properties;
+                let labels = dbResult.records[0].get("a").labels;
+                let index = labels.indexOf("Account");
+                delete labels[index];
+                result.tipologia = labels[0];
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
 
-    async createUtenteBase(nome, cognome, email, paypal, telefono, hash, tipologia) {
+    async createAccount(nome, cognome, email, paypal, telefono, pw, tipologia) {
 
         let result = null
         const session = driver.session()
@@ -31,13 +50,13 @@ class DBModel {
             result = await session.run(
                 'CREATE (a:Account: ' + tipologia + ' {id:apoc.create.uuid(), nome:$nome,  ' +
                 'cognome:$cognome, email:$email, account_paypal:$account_paypal,  ' +
-                'telefono: $telefono, hashed_pw:$hashed_pw}) RETURN a.id', {
+                'telefono: $telefono, password:$pw}) RETURN a.id', {
                 "nome": nome,
                 "cognome": cognome,
                 "email": email,
                 "account_paypal": paypal,
                 "telefono": telefono,
-                "hashed_pw": hash
+                "pw": pw
             })
 
         } catch (error) {
@@ -48,12 +67,12 @@ class DBModel {
         return result.records[0].get('a.id')
     }
 
-    async createUtente(nome, cognome, email, paypal, telefono, hash) {
-        return this.createUtenteBase(nome, cognome, email, paypal, telefono, hash, "Utente")
+    async createUtente(nome, cognome, email, paypal, telefono, pw) {
+        return this.createAccount(nome, cognome, email, paypal, telefono, pw, "Utente")
     }
 
-    async createGestore(nome, cognome, email, paypal, telefono, hash) {
-        return this.createUtenteBase(nome, cognome, email, paypal, telefono, hash, "Gestore")
+    async createGestore(nome, cognome, email, paypal, telefono, pw) {
+        return this.createAccount(nome, cognome, email, paypal, telefono, pw, "Gestore")
     }
 
     async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
