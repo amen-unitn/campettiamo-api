@@ -251,12 +251,21 @@ app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
     })
 })
 
-// router ottiene lista delle prenotazioni
+// router ottiene lista delle prenotazioni del campo
 app.get('/api/v1/campo/:idCampo/prenotazioni', (req, res) => {
     model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
         res.json(prenotazioni)
     }).catch(err => {
         res.json({ success: false, message: "Error" })
+    })
+})
+
+// router ottiene lista delle prenotazioni in base all'ID dell'utente
+app.get('/api/v1/utente/:idUtente/mie-prenotazioni', (req, res) => {
+    model.getListaPrenotazioniUtente(req.params.idUtente).then((prenotazioni) => {
+        res.json(prenotazioni)
+    }).catch(err => {
+        res.json({success:false, message:"Error"})
     })
 })
 
