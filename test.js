@@ -2,8 +2,30 @@
 const app = require('./api')
 const request = require("supertest")
 const body_parser = require("body-parser")
+const model = require ('./db-model')
 app.use(body_parser)
 
+describe('POST /api/v1/campo/:campo/slot', function() {
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v1/campo/559f4704-618d-493b-9279-aef803e5eacf/slot')
+        .send({
+          "data": '2022-11-11',
+          "oraInizio": '14:30',
+          "oraFine": '16:30'
+        })
+        .expect(200)
+        .expect(function(res) {
+            res.body.success = true
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+  })
+
+ 
 
 describe('GET /api/v1/campi', function() {
     it('responds with json', function(done) {
@@ -22,10 +44,10 @@ describe('GET /api/v1/campi', function() {
   })
   
   
-  describe('GET /api/v1/campi-nome', function() {
+describe('GET /api/v1/campi-nome', function() {
     it('responds with json', function(done) {
       request(app)
-        .get('/api/v1/campi-nome?nome=tren&raggio=5')
+        .get('/api/v1/campi-nome?nome=trento&raggio=5')
         .expect('Content-Type', /json/)
         .expect(200)
         .expect(function(res) {
@@ -36,9 +58,9 @@ describe('GET /api/v1/campi', function() {
           return done()
         })
     })
-  })
+})
   
-    describe('GET /api/v1/campi-luogo', function() {
+describe('GET /api/v1/campi-luogo', function() {
     it('responds with json', function(done) {
       request(app)
         .get('/api/v1/campi-luogo?lat=46.0682733&lng=11.1179705&raggio=10')
@@ -52,10 +74,10 @@ describe('GET /api/v1/campi', function() {
           return done()
         })
     })
-  })
+})
   
   
-  describe('/api/v1/campo/:id', function() {
+describe('/api/v1/campo/:id', function() {
   
       step('POST: create resource', function(done) {
           request(app)
@@ -93,4 +115,3 @@ describe('GET /api/v1/campi', function() {
       });
 
 });
-  

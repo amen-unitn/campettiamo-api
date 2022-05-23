@@ -26,7 +26,12 @@ app.get('/api/v1/campi', function (req, res) {
 
 app.get('/api/v1/campo/:id', function (req, res) {
     model.getCampo(req.params.id).then((result) => {
-        res.json(result)
+        if (result === null){
+            res.json({ERRORE : "il campo inserito non è valido"})
+        } else{
+            res.json(result)
+        }
+        
     })
 });
 
@@ -45,10 +50,10 @@ app.post('/api/v1/campo/', function (req, res) {
     if (checkCampoProperties(req.body)) {
         model.createCampo(req.body.idGestore, req.body.nome, req.body.indirizzo, req.body.cap,
             req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
-                res.json({ id: result })
+                res.json({"success": true, id: result })
             })
     } else {
-        res.json({ "success": false, "message": "Not all required fields were given." })
+        res.json({ "success": false, "message": "Not all required fields were given correctly." })
     }
 
 });
@@ -61,7 +66,7 @@ app.put('/api/v1/campo/:id', function (req, res) {
                 if (result)
                     res.json({ success: result, message: "Updated" })
                 else
-                    res.json({ success: result, message: "Campo not found" })
+                    res.json({ success: result, message: "Campo not found or invalid" })
             })
     } else {
         res.json({ "success": false, "message": "Not all required fields were given." })
@@ -71,10 +76,17 @@ app.put('/api/v1/campo/:id', function (req, res) {
 
 // slots
 
+
+
+
+
 app.post('/api/v1/campo/:idCampo/slot', function (req, res) {
     authentication.checkIsGestore(req, res);
     if (checkSlotProperties(req.body)) {
+        let [anno, mese, giorno] = req.body.data.split('-')
+        
         data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+
             if (result)
                 res.json({ success: result, message: "Slot created" })
             else
@@ -104,7 +116,9 @@ app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
 
 app.get('/api/v1/campo/:idCampo/slot/:data', function (req, res) {
     let [anno, mese, giorno] = req.params.data.split('-')
+
     // check if giorno is passed or not
+
     if (giorno == undefined) {
         model.checkMonthAvailability(req.params.idCampo, mese, anno).then((result) => {
             res.json(result)
@@ -170,13 +184,15 @@ function checkCampoProperties(reqBody) {
 }
 
 
-//router cerca campi per nome 
+//router cerca campi per nome   
 app.get('/api/v1/campi-nome', (req, res) => {
 
     model.getCampiPerNome(req.query.nome).then((campi) => {
-        res.json(campi)
-    }).catch(err => {
-        res.json({ success: false, message: "Error" })
+        if (campi.length === 0){
+            res.json({success:false, message:"campetto inesistente"})
+        } else {
+            res.json(campi)
+        }
     })
 })
 // router cerca campi per luogo (trova prima le coordinate geografiche del luogo)
