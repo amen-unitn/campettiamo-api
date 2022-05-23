@@ -22,6 +22,25 @@ class DBModel {
         else return { lat: -1, lng: -1 }
         //returns an object {lat:value, lng:value}
     }
+    
+    async getAccount(email){
+    	const session = driver.session()
+        let result = null
+        try {
+            let dbResult = await session.run('MATCH (a:Account {email:$email}) RETURN a, labels(a)', {"email":email})
+            if (dbResult.records && dbResult.records[0])
+                result = dbResult.records[0].get("a").properties;
+                let labels = dbResult.records[0].get("a").labels;
+                let index = labels.indexOf("Account");
+                delete labels[index];
+                result.tipologia = labels[0];
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
 
     async getAccount(email) {
         const session = driver.session()
@@ -567,6 +586,56 @@ return giorniLiberi
         }
         return result
     }
+
+    // Elimina se possibile la prenotazione dell'utente
+    async deletePrenotazione(idUtente, data, oraInizio, oraFine) {
+        const session = driver.session()
+        let result = []
+        try {
+            result = await session.run(
+                'MATCH (u : Utente {id : $idUtente}) - ' +
+                    '[p : PRENOTA {data: $data, oraInizio: $oraInizio, oraFine: $oraFine}] -> ' +
+                    '(c : Campo)' +
+                'WHERE p.data > datetime() AND p.oraInizio > datetime() AND oraFine > datetime()' +
+                'DETACH DELETE p',
+                {idUtente: idUtente, data: data, oraInizio: oraInizio, oraFine: oraFine}
+            )
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+    
+    // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
+    //     const session = driver.session()
+    //     let result = []
+    //     try {
+    //         let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
+    //             'WHERE s.data.year = toInteger($year) AND s.data.month = toInteger($month) AND s.data.day = toInteger($day) ' +
+    //             'RETURN s.oraInizio, s.oraFine',
+    //             {
+    //                 "idCampo": idCampo,
+    //                 "day": day,
+    //                 "month": month,
+    //                 "year": year
+    //             })
+    //         result = dbResult.records.map(record => {
+    //             return {
+    //                 oraInizio: record.get("s.oraInizio").toString(),
+    //                 oraFine: record.get("s.oraFine").toString()
+    //             }
+    //         })
+    //     }
+    //     catch (error) {
+    //         console.log(error)
+    //     }
+    //     finally {
+    //         await session.close()
+    //     }
+    //     return result
+    // }
 
     // Get the list of all manager's fields given the id of the manager
     async getListaCampiGestore(idGestore) {

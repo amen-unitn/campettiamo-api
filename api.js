@@ -316,5 +316,14 @@ app.get('/api/v1/gestore/:idGestore/miei-campi', (req, res) => {
     })
 })
 
-// used for testing
+// router elimina la prenotazione effettuata dall'utente
+app.delete('/api/v1/utente/:idUtente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
+    authentication.checkIsUtente(req, res);
+    model.deletePrenotazione(req.params.idUtente, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
+        res.json({ success: result.success, message: result.message })
+    }).catch(err => {
+        res.json({success:false, message:"Error"})
+    })
+})
+
 module.exports = app
