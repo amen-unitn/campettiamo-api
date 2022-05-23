@@ -5,9 +5,17 @@ app.use(express.json())
 var db = require('./db-model');
 const Path = require('node:path');
 var Fs = require('node:fs');
-const req = require('express/lib/request');
+var authentication = require('./auth.js');
 
 const model = new db.Model();
+
+app.post('/api/v1/authentication', authentication.generateToken);
+app.use('/api/v1/campi', authentication.tokenChecker);
+app.use('/api/v1/campo', authentication.tokenChecker);
+app.use('/api/v1/campi-luogo', authentication.tokenChecker);
+app.use('/api/v1/campi-nome', authentication.tokenChecker);
+app.use('/api/v1/campi-raggio', authentication.tokenChecker);
+app.use('/api/v1/utenti', authentication.tokenChecker);
 
 
 app.get('/api/v1/campi', function (req, res) {
@@ -23,6 +31,7 @@ app.get('/api/v1/campo/:id', function (req, res) {
 });
 
 app.delete('/api/v1/campo/:id', function (req, res) {
+    authentication.checkIsGestore(req, res);
     model.deleteCampo(req.params.id).then((result) => {
         if (result)
             res.json({ success: result, message: "Deleted" })
@@ -32,6 +41,7 @@ app.delete('/api/v1/campo/:id', function (req, res) {
 });
 
 app.post('/api/v1/campo/', function (req, res) {
+    authentication.checkIsGestore(req, res);
     if (checkCampoProperties(req.body)) {
         model.createCampo(req.body.idGestore, req.body.nome, req.body.indirizzo, req.body.cap,
             req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
@@ -44,6 +54,7 @@ app.post('/api/v1/campo/', function (req, res) {
 });
 
 app.put('/api/v1/campo/:id', function (req, res) {
+	authentication.checkIsGestore(req, res);
     if (checkCampoProperties(req.body)) {
         model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
             req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
@@ -61,6 +72,7 @@ app.put('/api/v1/campo/:id', function (req, res) {
 // slots
 
 app.post('/api/v1/campo/:idCampo/slot', function (req, res) {
+	authentication.checkIsGestore(req, res);
     if (checkSlotProperties(req.body)) {
         data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
             if (result)
@@ -74,6 +86,7 @@ app.post('/api/v1/campo/:idCampo/slot', function (req, res) {
 });
 
 app.delete('/api/v1/campo/:idCampo/slot', function (req, res) { // add oraInizio and oraFine
+    authentication.checkIsGestore(req, res);
     if (checkSlotProperties(req.body)) {
         model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
             res.json({ success: result.success, message: result.message })
@@ -107,6 +120,7 @@ app.get('/api/v1/campo/:idCampo/slot/:data', function (req, res) {
 // you can delete the old slot and create a new one
 
 app.post('/api/v1/campo/:idCampo/prenotazione', function (req, res) {
+	authentication.checkIsUtente(req, res);
     if (checkPrenotazioneProperties(req.body)) {
         model.newPrenotazione(req.body.idUtente, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
             if (result)
@@ -256,6 +270,17 @@ app.get('/api/v1/campo/:idGestore/miei-campi', (req, res) => {
         res.json({success:false, message:"Error"})
     })
 })
+
+// router elimina la prenotazione effettuata dall'utente
+app.delete('/api/v1/utente/:idUtente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
+    authentication.checkIsUtente(req, res);
+    model.deletePrenotazione(req.params.idUtente, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
+        res.json({ success: result.success, message: result.message })
+    }).catch(err => {
+        res.json({success:false, message:"Error"})
+    })
+})
+
 
 // const test = () => {
 //     let slot = {
