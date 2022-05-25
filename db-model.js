@@ -66,6 +66,50 @@ class DBModel {
         }
         return result.records[0].get('a.id')
     }
+    
+    async editAccount(id, nome, cognome, email, paypal, telefono, pw){
+    	let result = false
+        const session = driver.session()
+        try {
+            let dbResult = await session.run(
+                'MATCH (a:Account {id: $id}) SET a.nome = $nome,  ' +
+                'a.cognome = $cognome, a.email = $email, a.account_paypal = $account_paypal,  ' +
+                'a.telefono = $telefono, a.password = $pw', {
+                "id":id,
+                "nome": nome,
+                "cognome": cognome,
+                "email": email,
+                "account_paypal": paypal,
+                "telefono": telefono,
+                "pw": pw
+            });
+            result = dbResult.summary.counters._containsUpdates
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+    
+    async deleteAccount(id, nome, cognome, email, paypal, telefono, pw){
+    	let result = false
+        const session = driver.session()
+        try {
+            let dbResult = await session.run(
+                'MATCH (a:Account {id: $id}) DETACH DELETE a', {
+                "id":id});
+            console.log(result);
+            result = dbResult.summary.counters._containsUpdates
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
 
     async createUtente(nome, cognome, email, paypal, telefono, pw) {
         return this.createAccount(nome, cognome, email, paypal, telefono, pw, "Utente")

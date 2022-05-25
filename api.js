@@ -9,14 +9,38 @@ var authentication = require('./auth.js');
 
 const model = new db.Model();
 
-app.post('/api/v1/authentication', authentication.generateToken);
-app.use('/api/v1/campi', authentication.tokenChecker);
-app.use('/api/v1/campo', authentication.tokenChecker);
-app.use('/api/v1/campi-luogo', authentication.tokenChecker);
-app.use('/api/v1/campi-nome', authentication.tokenChecker);
-app.use('/api/v1/campi-raggio', authentication.tokenChecker);
-app.use('/api/v1/utenti', authentication.tokenChecker);
+function authFilter(req, res, next){
+	console.log(req._parsedUrl.pathname);
+	console.log(req.method);
+	pathRequiresAuth = ['/api/v1/campi','/api/v1/campo','/api/v1/campi-luogo','/api/v1/campi-nome','/api/v1/campi-raggio','/api/v1/utenti'];
+	if((req._parsedUrl.pathname == '/api/v1/utente' || req._parsedUrl.pathname == '/api/v1/gestore') && req.method == "POST"
+	   || req._parsedUrl.pathname == '/api/v1/utente/login' || req._parsedUrl.pathname == '/api/v1/gestore/login')
+		next(); //allow account creation
+	else{
+		let needAuth = false;
+		for(path in pathRequiresAuth){
+			if(req._parsedUrl.pathname.includes(path)){
+				needAuth = true;
+				break;
+			}
+		}
+		if(needAuth)
+			authentication.tokenChecker(req, res, next);
+		else
+			next();
+	}
+}
 
+app.use(authFilter);
+
+app.post('/api/v1/utente/login', authentication.generateToken);
+app.post('/api/v1/gestore/login', authentication.generateToken);
+app.post('/api/v1/utente', authentication.createAccountUtente);
+app.post('/api/v1/gestore', authentication.createAccountGestore);
+app.put('/api/v1/utente', authentication.editAccount);
+app.put('/api/v1/gestore', authentication.editAccount);
+app.delete('/api/v1/utente', authentication.deleteAccount);
+app.delete('/api/v1/gestore', authentication.deleteAccount);
 
 app.get('/api/v1/campi', function (req, res) {
     model.getListaCampi().then((campi) => {

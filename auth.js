@@ -2,6 +2,65 @@ var jwt = require('jsonwebtoken');
 var db = require('./db-model');
 const model = new db.Model();
 
+function createAccountUtente(req, res){
+	if(checkNewUserProperties(req.body)){
+		model.createUtente(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then( (id) => {
+			res.json({success:true, message:"Utente creato", id:id});
+		}).catch(err => {
+			res.json({success:false, message:"Errore nella registrazione dell'utente"});
+		});
+	}else
+		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti"});
+}
+
+function createAccountGestore(req, res){
+	if(checkNewUserProperties(req.body)){
+		model.createGestore(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then( (id) => {
+			res.json({success:true, message:"Gestore creato", id:id});
+		}).catch(err => {
+			res.json({success:false, message:"Errore nella registrazione dell'utente"});
+		});
+	}else
+		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti"});
+}
+
+function editAccount(req, res){
+	let userId = req.loggedUser.id;
+	if(checkNewUserProperties(req.body)){
+		model.editAccount(userId, req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then( 
+		(result) => {
+			if(result)
+				res.json({success:true, message:"Account modificato"});
+			else
+				res.json({success:false, message:"Errore nella modifica dell'account"});
+		}).catch(err => {
+			res.json({success:false, message:"Errore nella modifica dell'account"});
+		});
+	}else
+		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti"});
+}
+
+function deleteAccount(req, res){
+	let userId = req.loggedUser.id;
+	model.deleteAccount(userId).then( (result) => {
+		if(result)
+			res.json({success:true, message:"Account cancellato. Torna a trovarci :("});
+		else
+			res.json({success:false, message:"Errore nella cancellazione dell'account"});
+	}).catch(err => {
+		res.json({success:false, message:"Errore nella cancellazione dell'account"});
+	});
+}
+
+function checkNewUserProperties(reqBody) {
+    return reqBody.nome != undefined && reqBody.nome != null &&
+        reqBody.cognome != undefined && reqBody.cognome != null &&
+        reqBody.email != undefined && reqBody.email != null &&
+        reqBody.paypal != undefined && reqBody.paypal != null &&
+        reqBody.telefono != undefined && reqBody.telefono != null &&
+        reqBody.password != undefined && reqBody.password != null;
+}
+
 async function generateToken(req, res){
     let account = await model.getAccount(req.body.email)
     if (!account) res.json({success:false,message:'User not found'})
@@ -11,7 +70,7 @@ async function generateToken(req, res){
     var options = { expiresIn: 86400 } // expires in 24 hours
     var token = jwt.sign(payload, process.env.SUPER_SECRET, options);
     res.json({ success: true, message: 'Enjoy your token!',
-        token: token, email: account.email, id: account.id, tipologia: account.tipologia, self: "api/v1/" + account.id
+        token: token, email: account.email, id: account.id, tipologia: account.tipologia
     });
 }
 
@@ -43,4 +102,4 @@ const tokenChecker = function(req, res, next) {
 	});
 }
 
-module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente};
+module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente, createAccountUtente, createAccountGestore, editAccount, deleteAccount};
