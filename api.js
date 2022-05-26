@@ -9,14 +9,38 @@ var authentication = require('./auth.js');
 
 const model = new db.Model();
 
-app.post('/api/v1/authentication', authentication.generateToken);
-app.use('/api/v1/campi', authentication.tokenChecker);
-app.use('/api/v1/campo', authentication.tokenChecker);
-app.use('/api/v1/campi-luogo', authentication.tokenChecker);
-app.use('/api/v1/campi-nome', authentication.tokenChecker);
-app.use('/api/v1/campi-raggio', authentication.tokenChecker);
-app.use('/api/v1/utenti', authentication.tokenChecker);
+function authFilter(req, res, next){
+	console.log(req._parsedUrl.pathname);
+	console.log(req.method);
+	pathRequiresAuth = ['/api/v1/campi','/api/v1/campo','/api/v1/campi-luogo','/api/v1/campi-nome','/api/v1/campi-raggio','/api/v1/utenti'];
+	if((req._parsedUrl.pathname == '/api/v1/utente' || req._parsedUrl.pathname == '/api/v1/gestore') && req.method == "POST"
+	   || req._parsedUrl.pathname == '/api/v1/utente/login' || req._parsedUrl.pathname == '/api/v1/gestore/login')
+		next(); //allow account creation
+	else{
+		let needAuth = false;
+		for(path in pathRequiresAuth){
+			if(req._parsedUrl.pathname.includes(path)){
+				needAuth = true;
+				break;
+			}
+		}
+		if(needAuth)
+			authentication.tokenChecker(req, res, next);
+		else
+			next();
+	}
+}
 
+app.use(authFilter);
+
+app.post('/api/v1/utente/login', authentication.generateToken);
+app.post('/api/v1/gestore/login', authentication.generateToken);
+app.post('/api/v1/utente', authentication.createAccountUtente);
+app.post('/api/v1/gestore', authentication.createAccountGestore);
+app.put('/api/v1/utente', authentication.editAccount);
+app.put('/api/v1/gestore', authentication.editAccount);
+app.delete('/api/v1/utente', authentication.deleteAccount);
+app.delete('/api/v1/gestore', authentication.deleteAccount);
 
 app.get('/api/v1/campi', function (req, res) {
     model.getListaCampi().then((campi) => {
@@ -26,12 +50,12 @@ app.get('/api/v1/campi', function (req, res) {
 
 app.get('/api/v1/campo/:id', function (req, res) {
     model.getCampo(req.params.id).then((result) => {
-        if (result === null){
-            res.json({ERRORE : "il campo inserito non è valido"})
-        } else{
+        if (result === null) {
+            res.json({ ERRORE: "il campo inserito non è valido" })
+        } else {
             res.json(result)
         }
-        
+
     })
 });
 
@@ -50,7 +74,7 @@ app.post('/api/v1/campo/', function (req, res) {
     if (checkCampoProperties(req.body)) {
         model.createCampo(req.body.idGestore, req.body.nome, req.body.indirizzo, req.body.cap,
             req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
-                res.json({"success": true, id: result })
+                res.json({ "success": true, id: result })
             })
     } else {
         res.json({ "success": false, "message": "Not all required fields were given correctly." })
@@ -84,7 +108,6 @@ app.post('/api/v1/campo/:idCampo/slot', function (req, res) {
     authentication.checkIsGestore(req, res);
     if (checkSlotProperties(req.body)) {
         let [anno, mese, giorno] = req.body.data.split('-')
-        
         data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 
             if (result)
@@ -114,20 +137,18 @@ app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
     })
 });
 
-app.get('/api/v1/campo/:idCampo/slot/:data', function (req, res) {
-    let [anno, mese, giorno] = req.params.data.split('-')
+app.get('/api/v1/campo/:idCampo/slot/mese/:data', function (req, res) {
+    let [anno, mese] = req.params.data.split('-')
 
-    // check if giorno is passed or not
+    model.checkMonthAvailability(req.params.idCampo, mese, anno).then((result) => {
+        res.json(result)
+    })
+});
 
-    if (giorno == undefined) {
-        model.checkMonthAvailability(req.params.idCampo, mese, anno).then((result) => {
-            res.json(result)
-        })
-    } else {
-        model.getAvailableSlots(req.params.idCampo, req.params.data).then((result) => {
-            res.json(result)
-        })
-    }
+app.get('/api/v1/campo/:idCampo/slot/giorno/:data', function (req, res) {
+    model.getAvailableSlots(req.params.idCampo, req.params.data).then((result) => {
+        res.json(result)
+    })
 });
 
 // put method is not implemented because it wouldn't be useful specify both old and new values
@@ -188,8 +209,8 @@ function checkCampoProperties(reqBody) {
 app.get('/api/v1/campi-nome', (req, res) => {
 
     model.getCampiPerNome(req.query.nome).then((campi) => {
-        if (campi.length === 0){
-            res.json({success:false, message:"campetto inesistente"})
+        if (campi.length === 0) {
+            res.json({ success: false, message: "campetto inesistente" })
         } else {
             res.json(campi)
         }
@@ -281,12 +302,12 @@ app.get('/api/v1/utente/:idUtente/mie-prenotazioni', (req, res) => {
     model.getListaPrenotazioniUtente(req.params.idUtente).then((prenotazioni) => {
         res.json(prenotazioni)
     }).catch(err => {
-        res.json({success:false, message:"Error"})
+        res.json({ success: false, message: "Error" })
     })
 })
 
 // router ottiene lista dei campi del gestore
-app.get('/api/v1/campo/:idGestore/miei-campi', (req, res) => {
+app.get('/api/v1/gestore/:idGestore/miei-campi', (req, res) => {
     model.getListaCampiGestore(req.params.idGestore).then((campi) => {
         res.json(campi)
     }).catch(err => {

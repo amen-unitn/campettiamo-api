@@ -66,6 +66,50 @@ class DBModel {
         }
         return result.records[0].get('a.id')
     }
+    
+    async editAccount(id, nome, cognome, email, paypal, telefono, pw){
+    	let result = false
+        const session = driver.session()
+        try {
+            let dbResult = await session.run(
+                'MATCH (a:Account {id: $id}) SET a.nome = $nome,  ' +
+                'a.cognome = $cognome, a.email = $email, a.account_paypal = $account_paypal,  ' +
+                'a.telefono = $telefono, a.password = $pw', {
+                "id":id,
+                "nome": nome,
+                "cognome": cognome,
+                "email": email,
+                "account_paypal": paypal,
+                "telefono": telefono,
+                "pw": pw
+            });
+            result = dbResult.summary.counters._containsUpdates
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+    
+    async deleteAccount(id, nome, cognome, email, paypal, telefono, pw){
+    	let result = false
+        const session = driver.session()
+        try {
+            let dbResult = await session.run(
+                'MATCH (a:Account {id: $id}) DETACH DELETE a', {
+                "id":id});
+            console.log(result);
+            result = dbResult.summary.counters._containsUpdates
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
 
     async createUtente(nome, cognome, email, paypal, telefono, pw) {
         return this.createAccount(nome, cognome, email, paypal, telefono, pw, "Utente")
@@ -338,8 +382,9 @@ class DBModel {
             if (avaiableSlots.length > 0) {
                 // find which slot is suitable for given time
                 let slot = avaiableSlots.find(slot => {
-                    return slot.oraInizio <= oraInizio && oraFine <= slot.oraFine
+                    return slot.oraInizio <= oraInizio+':00Z' && oraFine <= slot.oraFine+':00Z'
                 })
+
                 if (slot) {
                     let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}), (u:Utente {id: $idUtente}) ' +
                         'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}]->(c) ' +
