@@ -575,6 +575,7 @@ return giorniLiberi
                     "oraInizio": record.get("p").properties.oraInizio.toString(),
                     "oraFine": record.get("p").properties.oraFine.toString(),
                     "nome": record.get("c").properties.nome.toString(),
+                    "id": record.get("c").properties.id.toString(),
                     "citta": record.get("c").properties.citta.toString(),
                     "indirizzo": record.get("c").properties.indirizzo.toString()
                 })
@@ -588,24 +589,20 @@ return giorniLiberi
     }
 
     // Elimina se possibile la prenotazione dell'utente
-    async deletePrenotazione(idUtente, data, oraInizio, oraFine) {
+    async deletePrenotazione(idUtente, data, oraInizio, oraFine, idCampo) {
         const session = driver.session()
         let result = []
         try {
             result = await session.run(
-                'MATCH (u : Utente {id : $idUtente}) - ' +
-                    '[p : PRENOTA {data: $data, oraInizio: $oraInizio, oraFine: $oraFine}] -> ' +
-                    '(c : Campo)' +
-                'WHERE p.data > datetime() AND p.oraInizio > datetime() AND oraFine > datetime()' +
-                'DETACH DELETE p',
-                {idUtente: idUtente, data: data, oraInizio: oraInizio, oraFine: oraFine}
+                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA] -> (c : Campo {idCampo : $idCampo})\nDELETE p',
+                {"idUtente" : idUtente, "data" : data, "oraInizio" : oraInizio, "oraFine" : oraFine, "idCampo" : idCampo}
             )
         } catch (error) {
             console.log(error)
         } finally {
             await session.close()
         }
-        return result
+        return result.summary.counters._stats.nodesDeleted > 0
     }
     
     // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd

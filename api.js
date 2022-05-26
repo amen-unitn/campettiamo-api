@@ -345,12 +345,13 @@ app.get('/api/v1/gestore/miei-campi', (req, res) => {
 })
 
 // router elimina la prenotazione effettuata dall'utente
-app.delete('/api/v1/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
+app.delete('/api/v1/utente/:idUtente/elimina-prenotazione/:idCampo', (req, res) => {
     authentication.checkIsUtente(req, res);
-    model.deletePrenotazione(req.loggedUser.id, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
-        res.json({ success: result.success, message: result.message })
-    }).catch(err => {
-        res.json({success:false, message:"Error"})
+    model.deletePrenotazione(req.params.idUtente, req.body.data, req.body.oraInizio, req.body.oraFine, req.params.idCampo).then((result) => {
+        if (result)
+            res.json({ success: result, message: "Deleted" })
+        else
+            res.json({ success: result, message: "Prenotazione not found" })
     })
 })
 
