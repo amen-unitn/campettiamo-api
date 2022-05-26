@@ -59,14 +59,19 @@ app.get('/api/v1/campo/:id', function (req, res) {
     })
 });
 
-app.delete('/api/v1/campo/:id', function (req, res) {
+app.delete('/api/v1/campo/:id', async (req, res) => {
     authentication.checkIsGestore(req, res);
-    model.deleteCampo(req.params.id).then((result) => {
-        if (result)
-            res.json({ success: result, message: "Deleted" })
-        else
-            res.json({ success: result, message: "Campo not found" })
-    })
+    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+    if(!checkOwns)
+    	res.json({success:false, message: "You are not authorized to do this"});
+    else{
+		model.deleteCampo(req.params.id).then((result) => {
+		    if (result)
+		        res.json({ success: result, message: "Deleted" })
+		    else
+		        res.json({ success: result, message: "Campo not found" })
+		})
+	}
 });
 
 app.post('/api/v1/campo/', function (req, res) {
@@ -82,19 +87,25 @@ app.post('/api/v1/campo/', function (req, res) {
 
 });
 
-app.put('/api/v1/campo/:id', function (req, res) {
+app.put('/api/v1/campo/:id', async (req, res) => {
     authentication.checkIsGestore(req, res);
-    if (checkCampoProperties(req.body)) {
-        model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
-            req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
-                if (result)
-                    res.json({ success: result, message: "Updated" })
-                else
-                    res.json({ success: result, message: "Campo not found or invalid" })
-            })
-    } else {
-        res.json({ "success": false, "message": "Not all required fields were given." })
-    }
+    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+    if(!checkOwns)
+    	res.json({success:false, message: "You are not authorized to do this"});
+    else{
+    
+		if (checkCampoProperties(req.body)) {
+		    model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
+		        req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
+		            if (result)
+		                res.json({ success: result, message: "Updated" })
+		            else
+		                res.json({ success: result, message: "Campo not found or invalid" })
+		        })
+		} else {
+		    res.json({ "success": false, "message": "Not all required fields were given." })
+		}
+	}
 
 });
 
@@ -104,31 +115,41 @@ app.put('/api/v1/campo/:id', function (req, res) {
 
 
 
-app.post('/api/v1/campo/:idCampo/slot', function (req, res) {
+app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
     authentication.checkIsGestore(req, res);
-    if (checkSlotProperties(req.body)) {
-        let [anno, mese, giorno] = req.body.data.split('-')
+    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+    if(!checkOwns)
+    	res.json({success:false, message: "You are not authorized to do this"});
+    else{
+    	if (checkSlotProperties(req.body)) {
+		    let [anno, mese, giorno] = req.body.data.split('-')
 
-        data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+		    data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 
-            if (result)
-                res.json({ success: result, message: "Slot created" })
-            else
-                res.json({ success: result, message: "Slot overlaps with another or is in the past" })
-        })
-    } else {
-        res.json({ "success": false, "message": "Not all required fields were given." })
+		        if (result)
+		            res.json({ success: result, message: "Slot created" })
+		        else
+		            res.json({ success: result, message: "Slot overlaps with another or is in the past" })
+		    })
+		} else {
+		    res.json({ "success": false, "message": "Not all required fields were given." })
+		}
     }
 });
 
-app.delete('/api/v1/campo/:idCampo/slot', function (req, res) { // add oraInizio and oraFine
+app.delete('/api/v1/campo/:idCampo/slot', async (req, res) => { // add oraInizio and oraFine
     authentication.checkIsGestore(req, res);
-    if (checkSlotProperties(req.body)) {
-        model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
-            res.json({ success: result.success, message: result.message })
-        })
-    } else {
-        res.json({ "success": false, "message": "Not all required fields were given." })
+    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+    if(!checkOwns)
+    	res.json({success:false, message: "You are not authorized to do this"});
+    else{
+    	if (checkSlotProperties(req.body)) {
+		    model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+		        res.json({ success: result.success, message: result.message })
+		    })
+		} else {
+		    res.json({ "success": false, "message": "Not all required fields were given." })
+		}
     }
 });
 
@@ -290,17 +311,23 @@ app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
 })
 
 // router ottiene lista delle prenotazioni del campo
-app.get('/api/v1/campo/:idCampo/prenotazioni', (req, res) => {
-    model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
-        res.json(prenotazioni)
-    }).catch(err => {
-        res.json({ success: false, message: "Error" })
-    })
+app.get('/api/v1/campo/:idCampo/prenotazioni', async (req, res) => {
+    authentication.checkIsGestore(req, res);
+    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+    if(!checkOwns)
+    	res.json({success:false, message: "You are not authorized to see these info"});
+    else
+		model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
+		    res.json(prenotazioni)
+		}).catch(err => {
+		    res.json({ success: false, message: "Error" })
+		})
 })
 
 // router ottiene lista delle prenotazioni in base all'ID dell'utente
-app.get('/api/v1/utente/:idUtente/mie-prenotazioni', (req, res) => {
-    model.getListaPrenotazioniUtente(req.params.idUtente).then((prenotazioni) => {
+app.get('/api/v1/utente/mie-prenotazioni', (req, res) => {
+    authentication.checkIsUtente(req, res);
+    model.getListaPrenotazioniUtente(req.loggedUser.id).then((prenotazioni) => {
         res.json(prenotazioni)
     }).catch(err => {
         res.json({ success: false, message: "Error" })
@@ -308,8 +335,9 @@ app.get('/api/v1/utente/:idUtente/mie-prenotazioni', (req, res) => {
 })
 
 // router ottiene lista dei campi del gestore
-app.get('/api/v1/gestore/:idGestore/miei-campi', (req, res) => {
-    model.getListaCampiGestore(req.params.idGestore).then((campi) => {
+app.get('/api/v1/gestore/miei-campi', (req, res) => {
+    authentication.checkIsGestore(req, res);
+    model.getListaCampiGestore(req.loggedUser.id).then((campi) => {
         res.json(campi)
     }).catch(err => {
         res.json({ success: false, message: "Error" })
@@ -317,9 +345,9 @@ app.get('/api/v1/gestore/:idGestore/miei-campi', (req, res) => {
 })
 
 // router elimina la prenotazione effettuata dall'utente
-app.delete('/api/v1/utente/:idUtente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
+app.delete('/api/v1/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
     authentication.checkIsUtente(req, res);
-    model.deletePrenotazione(req.params.idUtente, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
+    model.deletePrenotazione(req.loggedUser.id, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
         res.json({ success: result.success, message: result.message })
     }).catch(err => {
         res.json({success:false, message:"Error"})

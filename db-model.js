@@ -647,7 +647,8 @@ return giorniLiberi
             result.push({
                 "nome": record.get("c").properties.nome.toString(),
                 "citta": record.get("c").properties.citta.toString(),
-                "indirizzo": record.get("c").properties.indirizzo.toString()
+                "indirizzo": record.get("c").properties.indirizzo.toString(),
+                "id": record.get("c").properties.id.toString()
             })
         })
     } catch (error) {

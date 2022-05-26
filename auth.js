@@ -74,6 +74,19 @@ async function generateToken(req, res){
     });
 }
 
+async function checkOwnsCampo(idGestore, idCampo){
+	campi = await model.getListaCampiGestore(idGestore);
+	let result = false;
+	if(campi && campi.length > 0){
+		campi.forEach((campo) => {
+			if(campo.id == idCampo){
+				result = true;
+			}
+		});
+	}
+	return result;
+}
+
 const checkIsGestore = function(req, res){
 	let check = req.loggedUser && req.loggedUser.tipologia == "Gestore";
 	if(!check)
@@ -102,4 +115,4 @@ const tokenChecker = function(req, res, next) {
 	});
 }
 
-module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente, createAccountUtente, createAccountGestore, editAccount, deleteAccount};
+module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente, checkOwnsCampo, createAccountUtente, createAccountGestore, editAccount, deleteAccount};
