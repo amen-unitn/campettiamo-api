@@ -64,7 +64,7 @@ function checkNewUserProperties(reqBody) {
 async function generateToken(req, res){
     let account = await model.getAccount(req.body.email)
     if (!account) res.json({success:false,message:'User not found'})
-    else if (account.password!=req.body.password) res.json({success:false,message:'Wrong password'})
+    else if (!req.body.password || account.password!=req.body.password) res.json({success:false,message:'Wrong password'})
     // user authenticated -> create a token
     var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
     var options = { expiresIn: 86400 } // expires in 24 hours
