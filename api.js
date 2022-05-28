@@ -44,16 +44,16 @@ app.delete('/api/v1/gestore', authentication.deleteAccount);
 
 app.get('/api/v1/campi', function (req, res) {
     model.getListaCampi().then((campi) => {
-        res.json(campi)
+        res.json({success: true, data:campi})
     })
 });
 
 app.get('/api/v1/campo/:id', function (req, res) {
     model.getCampo(req.params.id).then((result) => {
         if (result === null) {
-            res.json({ ERRORE: "il campo inserito non è valido" })
+            res.json({ success:false, msg: "il campo inserito non è valido" })
         } else {
-            res.json(result)
+            res.json({success: true, data:result})
         }
 
     })
@@ -67,9 +67,9 @@ app.delete('/api/v1/campo/:id', async (req, res) => {
     else{
 		model.deleteCampo(req.params.id).then((result) => {
 		    if (result)
-		        res.json({ success: result, message: "Deleted" })
+		        res.json({ success: true, message: "Deleted" })
 		    else
-		        res.json({ success: result, message: "Campo not found" })
+		        res.json({ success: true, message: "Campo not found" })
 		})
 	}
 });
@@ -98,9 +98,9 @@ app.put('/api/v1/campo/:id', async (req, res) => {
 		    model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
 		        req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
 		            if (result)
-		                res.json({ success: result, message: "Updated" })
+		                res.json({ success: true, message: "Updated" })
 		            else
-		                res.json({ success: result, message: "Campo not found or invalid" })
+		                res.json({ success: true, message: "Campo not found or invalid" })
 		        })
 		} else {
 		    res.json({ "success": false, "message": "Not all required fields were given." })
@@ -127,9 +127,9 @@ app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
 		    data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 
 		        if (result)
-		            res.json({ success: result, message: "Slot created" })
+		            res.json({ success: true, message: "Slot created" })
 		        else
-		            res.json({ success: result, message: "Slot overlaps with another or is in the past" })
+		            res.json({ success: true, message: "Slot overlaps with another or is in the past" })
 		    })
 		} else {
 		    res.json({ "success": false, "message": "Not all required fields were given." })
@@ -155,7 +155,7 @@ app.delete('/api/v1/campo/:idCampo/slot', async (req, res) => { // add oraInizio
 
 app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
     model.getSlots(req.params.idCampo).then((result) => {
-        res.json(result)
+        res.json({success:true, data:result})
     })
 });
 
@@ -163,13 +163,13 @@ app.get('/api/v1/campo/:idCampo/slot/mese/:data', function (req, res) {
     let [anno, mese] = req.params.data.split('-')
 
     model.checkMonthAvailability(req.params.idCampo, mese, anno).then((result) => {
-        res.json(result)
+        res.json({success:true, data:result})
     })
 });
 
 app.get('/api/v1/campo/:idCampo/slot/giorno/:data', function (req, res) {
     model.getAvailableSlots(req.params.idCampo, req.params.data).then((result) => {
-        res.json(result)
+        res.json({success:true, data:result})
     })
 });
 
@@ -192,7 +192,7 @@ app.post('/api/v1/campo/:idCampo/prenota', function (req, res) {
 
 app.get('/api/v1/utenti', function (req, res) {
     model.idUtenti().then((utenti) => {
-        res.json(utenti)
+        res.json({success:true, data:utenti})
     })
 });
 
@@ -234,7 +234,7 @@ app.get('/api/v1/campi-nome', (req, res) => {
         if (campi.length === 0) {
             res.json({ success: false, message: "campetto inesistente" })
         } else {
-            res.json(campi)
+            res.json({success:true, data:campi})
         }
     })
 })
@@ -247,7 +247,7 @@ app.get('/api/v1/campi-luogo', async (req, res) => {
         coord = await model.getCoordinates(req.query.luogo)
 
         model.getCampiNelRaggio(coord.lat, coord.lng, parseFloat(req.query.raggio)).then((campi) => {
-            res.json(campi)
+            res.json({success:true, data:campi})
         }).catch(err => {
             res.json({ success: false, message: "Error" })
         })
@@ -266,7 +266,7 @@ app.get('/api/v1/campi-raggio', (req, res) => {
         res.json({ success: false, message: "Error on finding data" })
     } else {
         model.getCampiNelRaggio(parseFloat(req.query.lat), parseFloat(req.query.lng), parseFloat(req.query.raggio)).then((campi) => {
-            res.json(campi)
+            res.json({success:true, data:campi})
         }).catch(err => {
             res.json({ success: false, message: "Error" })
         })
@@ -318,7 +318,7 @@ app.get('/api/v1/campo/:idCampo/prenotazioni', async (req, res) => {
     	res.json({success:false, message: "You are not authorized to see these info"});
     else
 		model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
-		    res.json(prenotazioni)
+		    res.json({success:true, data:prenotazioni})
 		}).catch(err => {
 		    res.json({ success: false, message: "Error" })
 		})
@@ -328,7 +328,7 @@ app.get('/api/v1/campo/:idCampo/prenotazioni', async (req, res) => {
 app.get('/api/v1/utente/mie-prenotazioni', (req, res) => {
     authentication.checkIsUtente(req, res);
     model.getListaPrenotazioniUtente(req.loggedUser.id).then((prenotazioni) => {
-        res.json(prenotazioni)
+        res.json({success:true, data:prenotazioni})
     }).catch(err => {
         res.json({ success: false, message: "Error" })
     })
@@ -338,7 +338,7 @@ app.get('/api/v1/utente/mie-prenotazioni', (req, res) => {
 app.get('/api/v1/gestore/miei-campi', (req, res) => {
     authentication.checkIsGestore(req, res);
     model.getListaCampiGestore(req.loggedUser.id).then((campi) => {
-        res.json(campi)
+        res.json({success:true, data:campi})
     }).catch(err => {
         res.json({ success: false, message: "Error" })
     })
