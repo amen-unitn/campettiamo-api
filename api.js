@@ -42,6 +42,15 @@ app.put('/api/v1/gestore', authentication.editAccount);
 app.delete('/api/v1/utente', authentication.deleteAccount);
 app.delete('/api/v1/gestore', authentication.deleteAccount);
 
+/*
+
+	in caso di errore, nella risposta c'è anche errno, che vale:
+	1: token invalido
+	2: parametri non validi
+	3: non autorizzato
+	4: altro
+*/
+
 app.get('/api/v1/campi', function (req, res) {
     model.getListaCampi().then((campi) => {
         res.json({success: true, data:campi})
@@ -51,7 +60,7 @@ app.get('/api/v1/campi', function (req, res) {
 app.get('/api/v1/campo/:id', function (req, res) {
     model.getCampo(req.params.id).then((result) => {
         if (result === null) {
-            res.json({ success:false, msg: "il campo inserito non è valido" })
+            res.json({ success:false, msg: "il campo inserito non è valido", errno:2 })
         } else {
             res.json({success: true, data:result})
         }
@@ -63,7 +72,7 @@ app.delete('/api/v1/campo/:id', async (req, res) => {
     authentication.checkIsGestore(req, res);
     checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
     if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this"});
+    	res.json({success:false, message: "You are not authorized to do this", errno:3});
     else{
 		model.deleteCampo(req.params.id).then((result) => {
 		    if (result)
@@ -82,7 +91,7 @@ app.post('/api/v1/campo/', function (req, res) {
                 res.json({ "success": true, id: result })
             })
     } else {
-        res.json({ "success": false, "message": "Not all required fields were given correctly." })
+        res.json({ "success": false, "message": "Not all required fields were given correctly.", errno:2 })
     }
 
 });
@@ -91,7 +100,7 @@ app.put('/api/v1/campo/:id', async (req, res) => {
     authentication.checkIsGestore(req, res);
     checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
     if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this"});
+    	res.json({success:false, message: "You are not authorized to do this", errno:3});
     else{
     
 		if (checkCampoProperties(req.body)) {
@@ -103,7 +112,7 @@ app.put('/api/v1/campo/:id', async (req, res) => {
 		                res.json({ success: true, message: "Campo not found or invalid" })
 		        })
 		} else {
-		    res.json({ "success": false, "message": "Not all required fields were given." })
+		    res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
 		}
 	}
 
@@ -119,7 +128,7 @@ app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
     authentication.checkIsGestore(req, res);
     checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
     if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this"});
+    	res.json({success:false, message: "You are not authorized to do this", errno:3});
     else{
     	if (checkSlotProperties(req.body)) {
 		    let [anno, mese, giorno] = req.body.data.split('-')
@@ -132,7 +141,7 @@ app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
 		            res.json({ success: true, message: "Slot overlaps with another or is in the past" })
 		    })
 		} else {
-		    res.json({ "success": false, "message": "Not all required fields were given." })
+		    res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
 		}
     }
 });
@@ -141,14 +150,14 @@ app.delete('/api/v1/campo/:idCampo/slot', async (req, res) => { // add oraInizio
     authentication.checkIsGestore(req, res);
     checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
     if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this"});
+    	res.json({success:false, message: "You are not authorized to do this", errno:3});
     else{
     	if (checkSlotProperties(req.body)) {
 		    model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 		        res.json({ success: result.success, message: result.message })
 		    })
 		} else {
-		    res.json({ "success": false, "message": "Not all required fields were given." })
+		    res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
 		}
     }
 });
@@ -183,10 +192,10 @@ app.post('/api/v1/campo/:idCampo/prenota', function (req, res) {
             if (result)
                 res.json({ success: true, message: "Prenotazione created", id: result })
             else
-                res.json({ success: false, message: "Cannot create prenotazione" })
+                res.json({ success: false, message: "Cannot create prenotazione", errno:4 })
         })
     } else {
-        res.json({ "success": false, "message": "Not all required fields were given" })
+        res.json({ "success": false, "message": "Not all required fields were given", errno:2 })
     }
 });
 
@@ -232,7 +241,7 @@ app.get('/api/v1/campi-nome', (req, res) => {
 
     model.getCampiPerNome(req.query.nome).then((campi) => {
         if (campi.length === 0) {
-            res.json({ success: false, message: "campetto inesistente" })
+            res.json({ success: false, message: "campetto inesistente", errno:2 })
         } else {
             res.json({success:true, data:campi})
         }
@@ -242,14 +251,14 @@ app.get('/api/v1/campi-nome', (req, res) => {
 app.get('/api/v1/campi-luogo', async (req, res) => {
 
     if (req.query.luogo == undefined || req.query.luogo == null || req.query.luogo == '' || req.query.raggio == undefined || req.query.raggio == null || isNaN(parseFloat(req.query.raggio))) {
-        res.json({ success: false, message: "Luogo or raggio not provided" })
+        res.json({ success: false, message: "Luogo or raggio not provided", errno:2 })
     } else {
         coord = await model.getCoordinates(req.query.luogo)
 
         model.getCampiNelRaggio(coord.lat, coord.lng, parseFloat(req.query.raggio)).then((campi) => {
             res.json({success:true, data:campi})
         }).catch(err => {
-            res.json({ success: false, message: "Error" })
+            res.json({ success: false, message: "Error", errno:4 })
         })
     }
 
@@ -263,12 +272,12 @@ app.get('/api/v1/campi-raggio', (req, res) => {
     raggio = parseFloat(req.query.raggio)
 
     if (isNaN(lat) || isNaN(lng) || isNaN(raggio)) {
-        res.json({ success: false, message: "Error on finding data" })
+        res.json({ success: false, message: "Error on finding data", errno:2 })
     } else {
         model.getCampiNelRaggio(parseFloat(req.query.lat), parseFloat(req.query.lng), parseFloat(req.query.raggio)).then((campi) => {
             res.json({success:true, data:campi})
         }).catch(err => {
-            res.json({ success: false, message: "Error" })
+            res.json({ success: false, message: "Error", errno:4 })
         })
     }
 
@@ -281,7 +290,7 @@ app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
         const path = Path.resolve(__dirname, 'tmp', 'streetview' + Date.now() + '.jpg')
 
         if (campo === null) {
-            res.json({ success: false, message: "Campo not found" })
+            res.json({ success: false, message: "Campo not found", errno:2 })
         } else {
             const size = "800x800"
             let url = process.env.baseStreetViewUrl + "?size=" + size + "&location=" + campo.lat + "," + campo.lng + "&fov=80&heading=70&pitch=0&key=" + process.env.gmapsKey
@@ -300,13 +309,13 @@ app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
                 })
             })
             writer.on('error', (err) => {
-                res.json({ success: false, message: err })
+                res.json({ success: false, message: err, errno:4 })
             })
 
         }
     }).catch((err) => {
         console.log(err)
-        res.json({ success: false, message: "Error while downloading image from Street View" })
+        res.json({ success: false, message: "Error while downloading image from Street View", errno:4 })
     })
 })
 
@@ -315,12 +324,12 @@ app.get('/api/v1/campo/:idCampo/prenotazioni', async (req, res) => {
     authentication.checkIsGestore(req, res);
     checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
     if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to see these info"});
+    	res.json({success:false, message: "You are not authorized to see these info", errno:3});
     else
 		model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
 		    res.json({success:true, data:prenotazioni})
 		}).catch(err => {
-		    res.json({ success: false, message: "Error" })
+		    res.json({ success: false, message: "Error", errno:4 })
 		})
 })
 
@@ -330,7 +339,7 @@ app.get('/api/v1/utente/mie-prenotazioni', (req, res) => {
     model.getListaPrenotazioniUtente(req.loggedUser.id).then((prenotazioni) => {
         res.json({success:true, data:prenotazioni})
     }).catch(err => {
-        res.json({ success: false, message: "Error" })
+        res.json({ success: false, message: "Error", errno:4 })
     })
 })
 
@@ -340,7 +349,7 @@ app.get('/api/v1/gestore/miei-campi', (req, res) => {
     model.getListaCampiGestore(req.loggedUser.id).then((campi) => {
         res.json({success:true, data:campi})
     }).catch(err => {
-        res.json({ success: false, message: "Error" })
+        res.json({ success: false, message: "Error", errno:4 })
     })
 })
 
@@ -350,7 +359,7 @@ app.delete('/api/v1/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req
     model.deletePrenotazione(req.loggedUser.id, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
         res.json({ success: result.success, message: result.message })
     }).catch(err => {
-        res.json({success:false, message:"Error"})
+        res.json({success:false, message:"Error", errno:4})
     })
 })
 

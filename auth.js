@@ -7,10 +7,10 @@ function createAccountUtente(req, res){
 		model.createUtente(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then( (id) => {
 			res.json({success:true, message:"Utente creato", id:id});
 		}).catch(err => {
-			res.json({success:false, message:"Errore nella registrazione dell'utente"});
+			res.json({success:false, message:"Errore nella registrazione dell'utente", errno:4});
 		});
 	}else
-		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti"});
+		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
 
 function createAccountGestore(req, res){
@@ -18,10 +18,10 @@ function createAccountGestore(req, res){
 		model.createGestore(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then( (id) => {
 			res.json({success:true, message:"Gestore creato", id:id});
 		}).catch(err => {
-			res.json({success:false, message:"Errore nella registrazione dell'utente"});
+			res.json({success:false, message:"Errore nella registrazione del gestore", errno:4});
 		});
 	}else
-		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti"});
+		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
 
 function editAccount(req, res){
@@ -32,12 +32,12 @@ function editAccount(req, res){
 			if(result)
 				res.json({success:true, message:"Account modificato"});
 			else
-				res.json({success:false, message:"Errore nella modifica dell'account"});
+				res.json({success:false, message:"Errore nella modifica dell'account", errno:4});
 		}).catch(err => {
-			res.json({success:false, message:"Errore nella modifica dell'account"});
+			res.json({success:false, message:"Errore nella modifica dell'account", errno:4});
 		});
 	}else
-		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti"});
+		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
 
 function deleteAccount(req, res){
@@ -46,9 +46,9 @@ function deleteAccount(req, res){
 		if(result)
 			res.json({success:true, message:"Account cancellato. Torna a trovarci :("});
 		else
-			res.json({success:false, message:"Errore nella cancellazione dell'account"});
+			res.json({success:false, message:"Errore nella cancellazione dell'account", errno:4});
 	}).catch(err => {
-		res.json({success:false, message:"Errore nella cancellazione dell'account"});
+		res.json({success:false, message:"Errore nella cancellazione dell'account", errno:4});
 	});
 }
 
@@ -63,9 +63,9 @@ function checkNewUserProperties(reqBody) {
 
 async function generateToken(req, res){
     let account = await model.getAccount(req.body.email)
-    if (!account) res.json({success:false,message:'User not found'})
+    if (!account) res.json({success:false,message:'User not found', errno:2})
     else if (!req.body.password || account.password!=req.body.password) 
-		res.json({success:false,message:'Wrong password'})
+		res.json({success:false,message:'Wrong password', errno:2})
 	else{
 		// user authenticated -> create a token
 		var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
@@ -93,22 +93,22 @@ async function checkOwnsCampo(idGestore, idCampo){
 const checkIsGestore = function(req, res){
 	let check = req.loggedUser && req.loggedUser.tipologia == "Gestore";
 	if(!check)
-		res.json({ success: false, message: "You are not authorized to do this" })
+		res.json({ success: false, message: "You are not authorized to do this", errno:3})
 }
 
 const checkIsUtente = function(req, res){
 	let check = req.loggedUser && req.loggedUser.tipologia == "Utente";
 	if(!check)
-		res.json({ success: false, message: "You are not authorized to do this" })
+		res.json({ success: false, message: "You are not authorized to do this", errno:3 })
 }
 
 const tokenChecker = function(req, res, next) {
     // header or url parameters or post parameters
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
-	if (!token) res.status(401).json({success:false,message:'No token provided.'})
+	if (!token) res.status(401).json({success:false,message:'No token provided.', errno:2})
 	// decode token, verifies secret and checks expiration
 	jwt.verify(token, process.env.SUPER_SECRET, function(err, decoded) {
-		if (err) res.status(403).json({success:false,message:'Token not valid'})
+		if (err) res.status(403).json({success:false,message:'Token not valid', errno:1})
 		else {
 			// if everything is good, save in req object for use in other routes
 			req.loggedUser = decoded;
