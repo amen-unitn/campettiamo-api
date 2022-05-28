@@ -1,41 +1,14 @@
 var jwt = require('jsonwebtoken');
 var db = require('./db-model');
-var braintree = require("braintree");
 const res = require('express/lib/response');
+var paypal = require('./paypal');
 
 const model = new db.Model();
-
-const gateway = new braintree.BraintreeGateway({
-	environment: braintree.Environment.Sandbox,
-	publicKey: 'qcg6yx4jg6wty2gy',
-	privateKey: 'ad920af59352b256d85facb50066cdcf',
-	merchantId: '8w6h3phynd264tqs'
-});
-
-async function searchPayPalUserInVault(email) {
-	await gateway.customer.search((search) => {
-		search.email().is(email);
-	}, function (err, response) {
-		if (!err) {
-			return response.ids[0];
-		}
-	});
-}
-
-async function addPayPalUserInVault(nome, cognome, email, telefono) {
-	let result = await gateway.customer.create({
-		firstName: nome,
-		lastName: cognome,
-		email: email,
-		phone: telefono
-	});
-	return result.customer.id;
-}
 
 function createAccountUtente(req, res) {
 	if (checkNewUserProperties(req.body)) {
 		model.createUtente(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
-			addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
+			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
 				if (paypal != null)
 					res.json({ success: true, message: "Account creato", id: id });
 				else
@@ -53,7 +26,7 @@ function createAccountUtente(req, res) {
 function createAccountGestore(req, res) {
 	if (checkNewUserProperties(req.body)) {
 		model.createGestore(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
-			addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
+			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
 				if (paypal != null)
 					res.json({ success: true, message: "Account creato", id: id });
 				else
@@ -109,24 +82,25 @@ function checkNewUserProperties(reqBody) {
 async function generateToken(req, res) {
 	let account = await model.getAccount(req.body.email)
 	if (!account) res.json({ success: false, message: 'User not found' })
-	if (account.password != req.body.password) res.json({ success: false, message: 'Wrong password' })
+	else if (account.password != req.body.password) res.json({ success: false, message: 'Wrong password' })
 	console.log(account.email)
 	console.log(account.account_paypal)
 
 	// check why vaultId is not returned by the function and it is empty
 
-	let vaultId = searchPayPalUserInVault(account.account_paypal);
-	if (vaultId == null) {
-		vaultId = addPayPalUserInVault(account.nome, account.cognome, account.account_paypal, account.telefono)
-	}
-	// user authenticated -> create a token
-	var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
-	var options = { expiresIn: 86400 } // expires in 24 hours
-	var token = jwt.sign(payload, process.env.SUPER_SECRET, options);
-	res.json({
-		success: true, message: 'Enjoy your token!',
-		token: token, email: account.email, id: account.id, tipologia: account.tipologia,
-		paypal_client_token: vaultId
+	paypal.searchPayPalUserInVault(account.account_paypal, (vaultId) => {
+		if (vaultId == null) {
+			vaultId = paypal.addPayPalUserInVault(account.nome, account.cognome, account.account_paypal, account.telefono)
+		}
+		// user authenticated -> create a token
+		var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
+		var options = { expiresIn: 86400 } // expires in 24 hours
+		var token = jwt.sign(payload, process.env.SUPER_SECRET, options);
+		res.json({
+			success: true, message: 'Enjoy your token!',
+			token: token, email: account.email, id: account.id, tipologia: account.tipologia,
+			paypal_client_token: vaultId
+		});
 	});
 }
 
