@@ -64,14 +64,17 @@ function checkNewUserProperties(reqBody) {
 async function generateToken(req, res){
     let account = await model.getAccount(req.body.email)
     if (!account) res.json({success:false,message:'User not found'})
-    else if (!req.body.password || account.password!=req.body.password) res.json({success:false,message:'Wrong password'})
-    // user authenticated -> create a token
-    var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
-    var options = { expiresIn: 86400 } // expires in 24 hours
-    var token = jwt.sign(payload, process.env.SUPER_SECRET, options);
-    res.json({ success: true, message: 'Enjoy your token!',
-        token: token, email: account.email, id: account.id, tipologia: account.tipologia
-    });
+    else if (!req.body.password || account.password!=req.body.password) 
+		res.json({success:false,message:'Wrong password'})
+	else{
+		// user authenticated -> create a token
+		var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
+		var options = { expiresIn: 86400 } // expires in 24 hours
+		var token = jwt.sign(payload, process.env.SUPER_SECRET, options);
+		res.json({ success: true, message: 'Enjoy your token!',
+			token: token, email: account.email, id: account.id, tipologia: account.tipologia
+		});
+	}
 }
 
 async function checkOwnsCampo(idGestore, idCampo){
