@@ -68,50 +68,53 @@ app.get('/api/v1/campo/:id', function (req, res) {
 });
 
 app.delete('/api/v1/campo/:id', async (req, res) => {
-    authentication.checkIsGestore(req, res);
-    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
-    if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this", errno:3});
-    else{
-		model.deleteCampo(req.params.id).then((result) => {
-		    if (result)
-		        res.json({ success: true, message: "Deleted" })
-		    else
-		        res.json({ success: true, message: "Campo not found" })
-		})
+    if(authentication.checkIsGestore(req, res)){
+		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+		if(!checkOwns)
+			res.json({success:false, message: "You are not authorized to do this", errno:3});
+		else{
+			model.deleteCampo(req.params.id).then((result) => {
+				if (result)
+				    res.json({ success: true, message: "Deleted" })
+				else
+				    res.json({ success: true, message: "Campo not found" })
+			})
+		}
 	}
 });
 
 app.post('/api/v1/campo/', function (req, res) {
-    authentication.checkIsGestore(req, res);
-    if (checkCampoProperties(req.body)) {
-        model.createCampo(req.loggedUser.id, req.body.nome, req.body.indirizzo, req.body.cap,
-            req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
-                res.json({ "success": true, id: result })
-            })
-    } else {
-        res.json({ "success": false, "message": "Not all required fields were given correctly.", errno:2 })
-    }
+    if(authentication.checkIsGestore(req, res)){
+		if (checkCampoProperties(req.body)) {
+		    model.createCampo(req.loggedUser.id, req.body.nome, req.body.indirizzo, req.body.cap,
+		        req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
+		            res.json({ "success": true, id: result })
+		        })
+		} else {
+		    res.json({ "success": false, "message": "Not all required fields were given correctly.", errno:2 })
+		}
+	}
 
 });
 
 app.put('/api/v1/campo/:id', async (req, res) => {
-    authentication.checkIsGestore(req, res);
-    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
-    if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this", errno:3});
-    else{
-    
-		if (checkCampoProperties(req.body)) {
-		    model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
-		        req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
-		            if (result)
-		                res.json({ success: true, message: "Updated" })
-		            else
-		                res.json({ success: true, message: "Campo not found or invalid" })
-		        })
-		} else {
-		    res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
+    if(authentication.checkIsGestore(req, res)){
+		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+		if(!checkOwns)
+			res.json({success:false, message: "You are not authorized to do this", errno:3});
+		else{
+		
+			if (checkCampoProperties(req.body)) {
+				model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
+				    req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
+				        if (result)
+				            res.json({ success: true, message: "Updated" })
+				        else
+				            res.json({ success: true, message: "Campo not found or invalid" })
+				    })
+			} else {
+				res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
+			}
 		}
 	}
 
@@ -124,41 +127,43 @@ app.put('/api/v1/campo/:id', async (req, res) => {
 
 
 app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
-    authentication.checkIsGestore(req, res);
-    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
-    if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this", errno:3});
-    else{
-    	if (checkSlotProperties(req.body)) {
-		    let [anno, mese, giorno] = req.body.data.split('-')
+    if(authentication.checkIsGestore(req, res)){
+		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+		if(!checkOwns)
+			res.json({success:false, message: "You are not authorized to do this", errno:3});
+		else{
+			if (checkSlotProperties(req.body)) {
+				let [anno, mese, giorno] = req.body.data.split('-')
 
-		    data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+				data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 
-		        if (result)
-		            res.json({ success: true, message: "Slot created" })
-		        else
-		            res.json({ success: true, message: "Slot overlaps with another or is in the past" })
-		    })
-		} else {
-		    res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
+				    if (result)
+				        res.json({ success: true, message: "Slot created" })
+				    else
+				        res.json({ success: true, message: "Slot overlaps with another or is in the past" })
+				})
+			} else {
+				res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
+			}
 		}
-    }
+	}
 });
 
 app.delete('/api/v1/campo/:idCampo/slot', async (req, res) => { // add oraInizio and oraFine
-    authentication.checkIsGestore(req, res);
-    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
-    if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to do this", errno:3});
-    else{
-    	if (checkSlotProperties(req.body)) {
-		    model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
-		        res.json({ success: result.success, message: result.message })
-		    })
-		} else {
-		    res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
+    if(authentication.checkIsGestore(req, res)){
+		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+		if(!checkOwns)
+			res.json({success:false, message: "You are not authorized to do this", errno:3});
+		else{
+			if (checkSlotProperties(req.body)) {
+				model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+				    res.json({ success: result.success, message: result.message })
+				})
+			} else {
+				res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
+			}
 		}
-    }
+	}
 });
 
 app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
@@ -185,17 +190,18 @@ app.get('/api/v1/campo/:idCampo/slot/giorno/:data', function (req, res) {
 // you can delete the old slot and create a new one
 
 app.post('/api/v1/campo/:idCampo/prenota', function (req, res) {
-    authentication.checkIsUtente(req, res);
-    if (checkPrenotazioneProperties(req.body)) {
-        model.newPrenotazione(req.loggedUser.id, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
-            if (result)
-                res.json({ success: true, message: "Prenotazione created", id: result })
-            else
-                res.json({ success: false, message: "Cannot create prenotazione", errno:4 })
-        })
-    } else {
-        res.json({ "success": false, "message": "Not all required fields were given", errno:2 })
-    }
+    if(authentication.checkIsUtente(req, res)){
+		if (checkPrenotazioneProperties(req.body)) {
+		    model.newPrenotazione(req.loggedUser.id, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+		        if (result)
+		            res.json({ success: true, message: "Prenotazione created", id: result })
+		        else
+		            res.json({ success: false, message: "Cannot create prenotazione", errno:4 })
+		    })
+		} else {
+		    res.json({ "success": false, "message": "Not all required fields were given", errno:2 })
+		}
+	}
 });
 
 app.get('/api/v1/utenti', function (req, res) {
@@ -313,46 +319,50 @@ app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
 
 // router ottiene lista delle prenotazioni del campo
 app.get('/api/v1/campo/:idCampo/prenotazioni', async (req, res) => {
-    authentication.checkIsGestore(req, res);
-    checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
-    if(!checkOwns)
-    	res.json({success:false, message: "You are not authorized to see these info", errno:3});
-    else
-		model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
-		    res.json({success:true, data:prenotazioni})
-		}).catch(err => {
-		    res.json({ success: false, message: "Error", errno:4 })
-		})
+    if(authentication.checkIsGestore(req, res)){
+		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+		if(!checkOwns)
+			res.json({success:false, message: "You are not authorized to see these info", errno:3});
+		else
+			model.getListaPrenotazioni(req.params.idCampo).then((prenotazioni) => {
+				res.json({success:true, data:prenotazioni})
+			}).catch(err => {
+				res.json({ success: false, message: "Error", errno:4 })
+			})
+	}
 })
 
 // router ottiene lista delle prenotazioni in base all'ID dell'utente
 app.get('/api/v1/utente/mie-prenotazioni', (req, res) => {
-    authentication.checkIsUtente(req, res);
-    model.getListaPrenotazioniUtente(req.loggedUser.id).then((prenotazioni) => {
-        res.json({success:true, data:prenotazioni})
-    }).catch(err => {
-        res.json({ success: false, message: "Error", errno:4 })
-    })
+    if(authentication.checkIsUtente(req, res)){
+		model.getListaPrenotazioniUtente(req.loggedUser.id).then((prenotazioni) => {
+		    res.json({success:true, data:prenotazioni})
+		}).catch(err => {
+		    res.json({ success: false, message: "Error", errno:4 })
+		})
+	}
 })
 
 // router ottiene lista dei campi del gestore
 app.get('/api/v1/gestore/miei-campi', (req, res) => {
-    authentication.checkIsGestore(req, res);
-    model.getListaCampiGestore(req.loggedUser.id).then((campi) => {
-        res.json({success:true, data:campi})
-    }).catch(err => {
-        res.json({ success: false, message: "Error", errno:4 })
-    })
+    if(authentication.checkIsGestore(req, res)){
+		model.getListaCampiGestore(req.loggedUser.id).then((campi) => {
+		    res.json({success:true, data:campi})
+		}).catch(err => {
+		    res.json({ success: false, message: "Error", errno:4 })
+		})
+    }
 })
 
 // router elimina la prenotazione effettuata dall'utente
 app.delete('/api/v1/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
-    authentication.checkIsUtente(req, res);
-    model.deletePrenotazione(req.loggedUser.id, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
+    if(authentication.checkIsUtente(req, res)){
+    	model.deletePrenotazione(req.loggedUser.id, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
         res.json({ success: result.success, message: result.message })
-    }).catch(err => {
-        res.json({success:false, message:"Error", errno:4})
-    })
+		}).catch(err => {
+		    res.json({success:false, message:"Error", errno:4})
+		})
+    }
 })
 
 module.exports = app
