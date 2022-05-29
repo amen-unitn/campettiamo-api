@@ -18,14 +18,14 @@ function searchPayPalUserInVault(email, callback) {
 	});
 }
 
-async function addPayPalUserInVault(nome, cognome, email, telefono) {
+async function addPayPalUserInVault(nome, cognome, email, telefono, callback) {
 	let result = await gateway.customer.create({
 		firstName: nome,
 		lastName: cognome,
 		email: email,
 		phone: telefono
 	});
-	return result.customer.id;
+	callback(result.customer.id);
 }
 
 module.exports = {searchPayPalUserInVault, addPayPalUserInVault};

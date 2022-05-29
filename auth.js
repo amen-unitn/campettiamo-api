@@ -83,14 +83,12 @@ async function generateToken(req, res) {
 	let account = await model.getAccount(req.body.email)
 	if (!account) res.json({ success: false, message: 'User not found' })
 	else if (account.password != req.body.password) res.json({ success: false, message: 'Wrong password' })
-	console.log(account.email)
-	console.log(account.account_paypal)
-
-	// check why vaultId is not returned by the function and it is empty
 
 	paypal.searchPayPalUserInVault(account.account_paypal, (vaultId) => {
 		if (vaultId == null) {
-			vaultId = paypal.addPayPalUserInVault(account.nome, account.cognome, account.account_paypal, account.telefono)
+			vaultId = paypal.addPayPalUserInVault(account.nome, account.cognome, account.account_paypal, account.telefono, (res) => {
+				vaultId = res;
+			})
 		}
 		// user authenticated -> create a token
 		var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
