@@ -69,7 +69,7 @@ async function generateToken(req, res){
 	else{
 		// user authenticated -> create a token
 		var payload = { email: account.email, id: account.id, tipologia: account.tipologia }
-		var options = { expiresIn: 0 } // expires in 24 hours, 86400
+		var options = { expiresIn: 86400 } // expires in 24 hours, 86400
 		var token = jwt.sign(payload, process.env.SUPER_SECRET, options);
 		res.json({ success: true, message: 'Enjoy your token!',
 			token: token, email: account.email, id: account.id, tipologia: account.tipologia
