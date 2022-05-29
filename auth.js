@@ -24,6 +24,16 @@ function createAccountGestore(req, res){
 		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
 
+function getLoggedAccount(req, res){
+	let userId = req.loggedUser.id;
+	model.getAccountById(userId).then((account) => {
+		if(account != null)
+			res.json({success:true, data:account});
+		else
+			res.json({success:false, message:"User not found", errno:2});
+	}
+}
+
 function editAccount(req, res){
 	let userId = req.loggedUser.id;
 	if(checkNewUserProperties(req.body)){
@@ -62,7 +72,7 @@ function checkNewUserProperties(reqBody) {
 }
 
 async function generateToken(req, res){
-    let account = await model.getAccount(req.body.email)
+    let account = await model.getAccountByEmail(req.body.email)
     if (!account) res.json({success:false,message:'User not found', errno:2})
     else if (!req.body.password || account.password!=req.body.password) 
 		res.json({success:false,message:'Wrong password', errno:2})

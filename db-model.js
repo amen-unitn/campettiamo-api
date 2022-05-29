@@ -42,7 +42,8 @@ class DBModel {
         return result
     }
 
-    async getAccount(email) {
+    //returns account + tipologia
+    async getAccountByEmail(email) {
         const session = driver.session()
         let result = null
         try {
@@ -53,6 +54,22 @@ class DBModel {
             let index = labels.indexOf("Account");
             delete labels[index];
             result.tipologia = labels[0];
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+    
+    //returns only account, without tipologia
+    async getAccountById(id) {
+        const session = driver.session()
+        let result = null
+        try {
+            let dbResult = await session.run('MATCH (a:Account {id:$id}) RETURN a', { "id": id })
+            if (dbResult.records && dbResult.records[0])
+                result = dbResult.records[0].get("a").properties;
         } catch (error) {
             console.log(error)
         } finally {

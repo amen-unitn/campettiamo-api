@@ -38,6 +38,8 @@ app.post('/api/v1/utente', authentication.createAccountUtente);
 app.post('/api/v1/gestore', authentication.createAccountGestore);
 app.put('/api/v1/utente', authentication.editAccount);
 app.put('/api/v1/gestore', authentication.editAccount);
+app.get('/api/v1/utente', authentication.getLoggedAccount);
+app.get('/api/v1/gestore', authentication.getLoggedAccount);
 app.delete('/api/v1/utente', authentication.deleteAccount);
 app.delete('/api/v1/gestore', authentication.deleteAccount);
 
@@ -45,7 +47,7 @@ app.delete('/api/v1/gestore', authentication.deleteAccount);
 
 	in caso di errore, nella risposta c'è anche errno, che vale:
 	1: token invalido
-	2: parametri non validi
+	2: parametri non validi / corrispondenze non trovate
 	3: non autorizzato
 	4: altro
 */
