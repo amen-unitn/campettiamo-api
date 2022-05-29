@@ -14,7 +14,7 @@ function authFilter(req, res, next){
 	console.log(req.method);
 	pathRequiresAuth = ['/api/v1/campi','/api/v1/campo','/api/v1/campi-luogo','/api/v1/campi-nome','/api/v1/campi-raggio','/api/v1/utenti'];
 	if((req._parsedUrl.pathname == '/api/v1/utente' || req._parsedUrl.pathname == '/api/v1/gestore') && req.method == "POST"
-	   || req._parsedUrl.pathname == '/api/v1/utente/login' || req._parsedUrl.pathname == '/api/v1/gestore/login')
+	   || req._parsedUrl.pathname == '/api/v1/login')
 		next(); //allow account creation
 	else{
 		let needAuth = false;
@@ -33,8 +33,7 @@ function authFilter(req, res, next){
 
 app.use(authFilter);
 
-app.post('/api/v1/utente/login', authentication.generateToken);
-app.post('/api/v1/gestore/login', authentication.generateToken);
+app.post('/api/v1/login', authentication.generateToken);
 app.post('/api/v1/utente', authentication.createAccountUtente);
 app.post('/api/v1/gestore', authentication.createAccountGestore);
 app.put('/api/v1/utente', authentication.editAccount);
