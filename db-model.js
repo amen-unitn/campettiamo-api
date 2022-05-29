@@ -10,10 +10,10 @@ class DBModel {
 
     async getCoordinates(indirizzo, cap, citta, provincia) {
         let address = indirizzo + " " + cap + " " + citta + " " + provincia
-        return await getCoordinates(address)
+        return await getCoordinatesByString(address)
     }
 
-    async getCoordinates(address) {
+    async getCoordinatesByString(address) {
         address = address.replaceAll(" ", "+")
         let url = process.env.baseGmapsUrl + address + "&key=" + process.env.gmapsKey
         const response = await axios.get(url)
