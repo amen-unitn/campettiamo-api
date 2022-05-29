@@ -94,12 +94,14 @@ const checkIsGestore = function(req, res){
 	let check = req.loggedUser && req.loggedUser.tipologia == "Gestore";
 	if(!check)
 		res.json({ success: false, message: "You are not authorized to do this", errno:3})
+	return check;
 }
 
 const checkIsUtente = function(req, res){
 	let check = req.loggedUser && req.loggedUser.tipologia == "Utente";
 	if(!check)
 		res.json({ success: false, message: "You are not authorized to do this", errno:3 })
+	return check;
 }
 
 const tokenChecker = function(req, res, next) {

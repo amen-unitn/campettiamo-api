@@ -83,7 +83,7 @@ app.delete('/api/v1/campo/:id', async (req, res) => {
 	}
 });
 
-app.post('/api/v1/campo/', function (req, res) {
+app.post('/api/v1/campo', function (req, res) {
     if(authentication.checkIsGestore(req, res)){
 		if (checkCampoProperties(req.body)) {
 		    model.createCampo(req.loggedUser.id, req.body.nome, req.body.indirizzo, req.body.cap,
