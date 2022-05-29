@@ -142,7 +142,7 @@ app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
 				    if (result)
 				        res.json({ success: true, message: "Slot created" })
 				    else
-				        res.json({ success: true, message: "Slot overlaps with another or is in the past" })
+				        res.json({ success: false, message: "Slot overlaps with another one, is in the past" })
 				})
 			} else {
 				res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })

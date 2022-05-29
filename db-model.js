@@ -132,14 +132,16 @@ class DBModel {
     async deleteAccount(id, nome, cognome, email, paypal, telefono, pw){
     	let result = false
         const session = driver.session()
+        const tx = session.beginTransaction()
         try {
-            let dbResult = await session.run(
-                'MATCH (a:Account {id: $id}) DETACH DELETE a', {
-                "id":id});
+            let tx1 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo)-[sr:HAS_SLOT]->(s:Slot) DETACH DELETE s", {"id":id});
+            let tx2 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo) DETACH DELETE c", {"id":id});
+            let tx3 = await tx.run("MATCH (a:Account {id:$id}) DETACH DELETE a", {"id":id});
+            await tx.commit();
             console.log(result);
-            result = dbResult.summary.counters._containsUpdates
-
+            result = tx3.summary.counters._containsUpdates
         } catch (error) {
+            tx.rollback();
             console.log(error)
         } finally {
             await session.close()
@@ -157,11 +159,12 @@ class DBModel {
 
     async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
+        const tx = session.beginTransaction()
         let final = null
         let result
         let coord = await this.getCoordinates(indirizzo, cap, citta, provincia)
         try {
-            result = await session.run('CREATE (c:Campo {id:apoc.create.uuid(), nome:$nome,  ' +
+            result = await tx.run('CREATE (c:Campo {id:apoc.create.uuid(), nome:$nome,  ' +
                 'indirizzo:$indirizzo, cap:$cap, citta:$citta, provincia:$provincia, sport:$sport,  ' +
                 'tariffa:$tariffa, prenotaEntro:$prenotaEntro, lat:$lat, lng:$lng}) RETURN c.id', {
                 "nome": nome,
@@ -175,11 +178,14 @@ class DBModel {
                 "lat": coord.lat,
                 "lng": coord.lng
             })
-            final = await session.run('MATCH (g:Gestore),(c:Campo) WHERE g.id = $gestoreId  ' +
+            final = await tx.run('MATCH (g:Gestore),(c:Campo) WHERE g.id = $gestoreId  ' +
                 'AND c.id = $campoId CREATE (g)-[r:AFFITTA]->(c)',
                 { "gestoreId": idGestore, "campoId": result.records[0].get('c.id') })
+            await tx.commit()
         } catch (error) {
+            tx.rollback()
             console.log(error)
+            return null
         } finally {
             await session.close()
         }
