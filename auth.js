@@ -132,4 +132,4 @@ const tokenChecker = function(req, res, next) {
 	});
 }
 
-module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente, checkOwnsCampo, createAccountUtente, createAccountGestore, editAccount, deleteAccount};
+module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente, checkOwnsCampo, createAccountUtente, createAccountGestore, editAccount, deleteAccount, getLoggedAccount};
