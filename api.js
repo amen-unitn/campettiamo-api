@@ -86,7 +86,7 @@ app.delete('/api/v1/campo/:id', async (req, res) => {
 app.post('/api/v1/campo/', function (req, res) {
     authentication.checkIsGestore(req, res);
     if (checkCampoProperties(req.body)) {
-        model.createCampo(req.body.idGestore, req.body.nome, req.body.indirizzo, req.body.cap,
+        model.createCampo(req.loggedUser.id, req.body.nome, req.body.indirizzo, req.body.cap,
             req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
                 res.json({ "success": true, id: result })
             })
@@ -188,7 +188,7 @@ app.get('/api/v1/campo/:idCampo/slot/giorno/:data', function (req, res) {
 app.post('/api/v1/campo/:idCampo/prenota', function (req, res) {
     authentication.checkIsUtente(req, res);
     if (checkPrenotazioneProperties(req.body)) {
-        model.newPrenotazione(req.body.idUtente, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+        model.newPrenotazione(req.loggedUser.id, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
             if (result)
                 res.json({ success: true, message: "Prenotazione created", id: result })
             else
@@ -212,13 +212,7 @@ function checkSlotProperties(reqBody) {
 }
 
 function checkPrenotazioneProperties(reqBody) {
-    const today = new Date();
-    const todayDate = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
-    const prenotazione = new Date(reqBody.data + 'T' + reqBody.oraInizio + ':00');
-    const prenotazioneDate = prenotazione.getFullYear() + '-' + (prenotazione.getMonth() + 1) + '-' + prenotazione.getDate();
-
-    return reqBody.idUtente != undefined && reqBody.idUtente != null &&
-        reqBody.data != undefined && reqBody.data != null &&
+    return reqBody.data != undefined && reqBody.data != null &&
         reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
         reqBody.oraFine != undefined && reqBody.oraFine != null
 }
@@ -231,8 +225,7 @@ function checkCampoProperties(reqBody) {
         reqBody.provincia != undefined && reqBody.provincia != null &&
         reqBody.sport != undefined && reqBody.sport != null &&
         reqBody.tariffa != undefined && reqBody.tariffa != null && !isNaN(reqBody.tariffa) &&
-        reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null && !isNaN(reqBody.prenotaEntro) &&
-        reqBody.idGestore != undefined && reqBody.idGestore != null
+        reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null && !isNaN(reqBody.prenotaEntro)
 }
 
 

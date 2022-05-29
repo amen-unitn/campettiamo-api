@@ -397,10 +397,10 @@ class DBModel {
         const session = driver.session()
         let result = null
         try {
-            let avaiableSlots = await this.getAvailableSlots(idCampo, data)
-            if (avaiableSlots.length > 0) {
+            let availableSlots = await this.getAvailableSlots(idCampo, data)
+            if (availableSlots.length > 0) {
                 // find which slot is suitable for given time
-                let slot = avaiableSlots.find(slot => {
+                let slot = availableSlots.find(slot => {
                     return slot.oraInizio <= oraInizio+':00Z' && oraFine <= slot.oraFine+':00Z'
                 })
 
