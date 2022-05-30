@@ -8,12 +8,12 @@ const model = new db.Model();
 function createAccountUtente(req, res) {
 	if (checkNewUserProperties(req.body)) {
 		model.createUtente(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
-			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
+			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono, (paypal) => {
 				if (paypal != null)
 					res.json({ success: true, message: "Utente creato", id: id });
 				else
 					res.json({ success: false, message: "PayPal id non ritornato" });
-			}).catch(err => {
+			}, err => {
 				res.json({ success: false, message: "Errore nel salvataggio dell'account PayPal" });
 			});
 		}).catch(err => {
@@ -26,12 +26,12 @@ function createAccountUtente(req, res) {
 function createAccountGestore(req, res) {
 	if (checkNewUserProperties(req.body)) {
 		model.createGestore(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
-			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
+			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono, (paypal) => {
 				if (paypal != null)
 					res.json({ success: true, message: "Gestore creato", id: id });
 				else
 					res.json({ success: false, message: "PayPal id non ritornato" });
-			}).catch(err => {
+			}, err => {
 				res.json({ success: false, message: "Errore nel salvataggio dell'account PayPal" });
 			});
 		}).catch(err => {
@@ -138,7 +138,7 @@ async function checkOwnsCampo(idGestore, idCampo){
 	let result = false;
 	if(campi && campi.length > 0){
 		campi.forEach((campo) => {
-			console.log(campo.id);
+			//console.log(campo.id);
 			if(campo.id == idCampo){
 				result = true;
 			}
@@ -171,7 +171,7 @@ const tokenChecker = function(req, res, next) {
 		else {
 			// if everything is good, save in req object for use in other routes
 			req.loggedUser = decoded;
-			console.log(req.loggedUser);
+			//console.log(req.loggedUser);
 			next();
 		}
 	});

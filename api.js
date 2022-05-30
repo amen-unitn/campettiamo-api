@@ -10,8 +10,8 @@ var authentication = require('./auth.js');
 const model = new db.Model();
 
 function authFilter(req, res, next){
-	console.log(req._parsedUrl.pathname);
-	console.log(req.method);
+	//console.log(req._parsedUrl.pathname);
+	//console.log(req.method);
 	pathRequiresAuth = ['/api/v2/campi','/api/v2/campo','/api/v2/campi-luogo','/api/v2/campi-nome','/api/v2/campi-raggio','/api/v2/utenti'];
 	if((req._parsedUrl.pathname == '/api/v2/utente' || req._parsedUrl.pathname == '/api/v2/gestore') && req.method == "POST"
 	   || req._parsedUrl.pathname == '/api/v2/login' || req._parsedUrl.pathname == '/api/v2/recupero')
@@ -50,7 +50,8 @@ app.delete('/api/v2/gestore', authentication.deleteAccount);
 	1: token invalido
 	2: parametri non validi / corrispondenze non trovate
 	3: non autorizzato
-	4: altro
+	4: altro (errore interno)
+	5: percorso non valido (endpoint non trovato)
 */
 
 app.get('/api/v2/campi', function (req, res) {
@@ -116,7 +117,7 @@ app.put('/api/v2/campo/:id', async (req, res) => {
 				            res.json({ success: true, message: "Campo not found or invalid" })
 				    })
 			} else {
-				res.json({ "success": false, "message": "Not all required fields were given.", errno:2 })
+				res.json({ "success": false, "message": "Not all required fields were given, or they were invalid", errno:2 })
 			}
 		}
 	}
@@ -367,5 +368,10 @@ app.delete('/api/v2/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req
 		})
     }
 })
+
+//The 404 Route (ALWAYS Keep this as the last route)
+app.get('*', function(req, res){
+  res.status(404).json({success:false, message:"Invalid path", errno:5});
+});
 
 module.exports = app

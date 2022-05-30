@@ -18,14 +18,19 @@ function searchPayPalUserInVault(email, callback) {
 	});
 }
 
-async function addPayPalUserInVault(nome, cognome, email, telefono, callback) {
-	let result = await gateway.customer.create({
-		firstName: nome,
-		lastName: cognome,
-		email: email,
-		phone: telefono
-	});
-	callback(result.customer.id);
+async function addPayPalUserInVault(nome, cognome, email, telefono, callback, errCallback) {
+	try{
+		let result = await gateway.customer.create({
+			firstName: nome,
+			lastName: cognome,
+			email: email,
+			phone: telefono
+		});
+		callback(result.customer.id);
+	}catch(err){
+		if(errCallback)
+			errCallback(err);
+	}
 }
 
 module.exports = {searchPayPalUserInVault, addPayPalUserInVault};
