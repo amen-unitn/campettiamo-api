@@ -10,7 +10,7 @@ function createAccountUtente(req, res) {
 		model.createUtente(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
 			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
 				if (paypal != null)
-					res.json({ success: true, message: "Account creato", id: id });
+					res.json({ success: true, message: "Utente creato", id: id });
 				else
 					res.json({ success: false, message: "PayPal id non ritornato" });
 			}).catch(err => {
@@ -28,7 +28,7 @@ function createAccountGestore(req, res) {
 		model.createGestore(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
 			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono).then((paypal) => {
 				if (paypal != null)
-					res.json({ success: true, message: "Account creato", id: id });
+					res.json({ success: true, message: "Gestore creato", id: id });
 				else
 					res.json({ success: false, message: "PayPal id non ritornato" });
 			}).catch(err => {
