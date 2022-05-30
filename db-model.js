@@ -62,6 +62,20 @@ class DBModel {
         return result
     }
     
+    async updatePassword(email, password) {
+    	const session = driver.session()
+        let result = false;
+        try {
+            let dbResult = await session.run('MATCH (a:Account {email:$email}) SET a.password = $pwd', { "email": email, "pwd":password });
+            result = dbResult.summary.counters._containsUpdates;
+        } catch (error) {
+            console.log(error);
+        } finally {
+            await session.close();
+        }
+        return result;
+    }
+    
     //returns only account, without tipologia
     async getAccountById(id) {
         const session = driver.session()

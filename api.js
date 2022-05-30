@@ -12,9 +12,9 @@ const model = new db.Model();
 function authFilter(req, res, next){
 	console.log(req._parsedUrl.pathname);
 	console.log(req.method);
-	pathRequiresAuth = ['/api/v1/campi','/api/v1/campo','/api/v1/campi-luogo','/api/v1/campi-nome','/api/v1/campi-raggio','/api/v1/utenti'];
-	if((req._parsedUrl.pathname == '/api/v1/utente' || req._parsedUrl.pathname == '/api/v1/gestore') && req.method == "POST"
-	   || req._parsedUrl.pathname == '/api/v1/login')
+	pathRequiresAuth = ['/api/v2/campi','/api/v2/campo','/api/v2/campi-luogo','/api/v2/campi-nome','/api/v2/campi-raggio','/api/v2/utenti'];
+	if((req._parsedUrl.pathname == '/api/v2/utente' || req._parsedUrl.pathname == '/api/v2/gestore') && req.method == "POST"
+	   || req._parsedUrl.pathname == '/api/v2/login' || req._parsedUrl.pathname == '/api/v2/recupero')
 		next(); //allow account creation
 	else{
 		let needAuth = false;
@@ -33,15 +33,16 @@ function authFilter(req, res, next){
 
 app.use(authFilter);
 
-app.post('/api/v1/login', authentication.generateToken);
-app.post('/api/v1/utente', authentication.createAccountUtente);
-app.post('/api/v1/gestore', authentication.createAccountGestore);
-app.put('/api/v1/utente', authentication.editAccount);
-app.put('/api/v1/gestore', authentication.editAccount);
-app.get('/api/v1/utente', authentication.getLoggedAccount);
-app.get('/api/v1/gestore', authentication.getLoggedAccount);
-app.delete('/api/v1/utente', authentication.deleteAccount);
-app.delete('/api/v1/gestore', authentication.deleteAccount);
+app.post('/api/v2/login', authentication.generateToken);
+app.post('/api/v2/recupero', authentication.recuperoPassword);
+app.post('/api/v2/utente', authentication.createAccountUtente);
+app.post('/api/v2/gestore', authentication.createAccountGestore);
+app.put('/api/v2/utente', authentication.editAccount);
+app.put('/api/v2/gestore', authentication.editAccount);
+app.get('/api/v2/utente', authentication.getLoggedAccount);
+app.get('/api/v2/gestore', authentication.getLoggedAccount);
+app.delete('/api/v2/utente', authentication.deleteAccount);
+app.delete('/api/v2/gestore', authentication.deleteAccount);
 
 /*
 
@@ -52,13 +53,13 @@ app.delete('/api/v1/gestore', authentication.deleteAccount);
 	4: altro
 */
 
-app.get('/api/v1/campi', function (req, res) {
+app.get('/api/v2/campi', function (req, res) {
     model.getListaCampi().then((campi) => {
         res.json({success: true, data:campi})
     })
 });
 
-app.get('/api/v1/campo/:id', function (req, res) {
+app.get('/api/v2/campo/:id', function (req, res) {
     model.getCampo(req.params.id).then((result) => {
         if (result === null) {
             res.json({ success:false, msg: "il campo inserito non è valido", errno:2 })
@@ -69,9 +70,9 @@ app.get('/api/v1/campo/:id', function (req, res) {
     })
 });
 
-app.delete('/api/v1/campo/:id', async (req, res) => {
+app.delete('/api/v2/campo/:id', async (req, res) => {
     if(authentication.checkIsGestore(req, res)){
-		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.id);
 		if(!checkOwns)
 			res.json({success:false, message: "You are not authorized to do this", errno:3});
 		else{
@@ -85,7 +86,7 @@ app.delete('/api/v1/campo/:id', async (req, res) => {
 	}
 });
 
-app.post('/api/v1/campo', function (req, res) {
+app.post('/api/v2/campo', function (req, res) {
     if(authentication.checkIsGestore(req, res)){
 		if (checkCampoProperties(req.body)) {
 		    model.createCampo(req.loggedUser.id, req.body.nome, req.body.indirizzo, req.body.cap,
@@ -99,9 +100,9 @@ app.post('/api/v1/campo', function (req, res) {
 
 });
 
-app.put('/api/v1/campo/:id', async (req, res) => {
+app.put('/api/v2/campo/:id', async (req, res) => {
     if(authentication.checkIsGestore(req, res)){
-		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
+		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.id);
 		if(!checkOwns)
 			res.json({success:false, message: "You are not authorized to do this", errno:3});
 		else{
@@ -128,7 +129,7 @@ app.put('/api/v1/campo/:id', async (req, res) => {
 
 
 
-app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
+app.post('/api/v2/campo/:idCampo/slot', async (req, res) => {
     if(authentication.checkIsGestore(req, res)){
 		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
 		if(!checkOwns)
@@ -151,7 +152,7 @@ app.post('/api/v1/campo/:idCampo/slot', async (req, res) => {
 	}
 });
 
-app.delete('/api/v1/campo/:idCampo/slot', async (req, res) => { // add oraInizio and oraFine
+app.delete('/api/v2/campo/:idCampo/slot', async (req, res) => { // add oraInizio and oraFine
     if(authentication.checkIsGestore(req, res)){
 		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
 		if(!checkOwns)
@@ -168,13 +169,13 @@ app.delete('/api/v1/campo/:idCampo/slot', async (req, res) => { // add oraInizio
 	}
 });
 
-app.get('/api/v1/campo/:idCampo/slots', function (req, res) {
+app.get('/api/v2/campo/:idCampo/slots', function (req, res) {
     model.getSlots(req.params.idCampo).then((result) => {
         res.json({success:true, data:result})
     })
 });
 
-app.get('/api/v1/campo/:idCampo/slot/mese/:data', function (req, res) {
+app.get('/api/v2/campo/:idCampo/slot/mese/:data', function (req, res) {
     let [anno, mese] = req.params.data.split('-')
 
     model.checkMonthAvailability(req.params.idCampo, mese, anno).then((result) => {
@@ -182,7 +183,7 @@ app.get('/api/v1/campo/:idCampo/slot/mese/:data', function (req, res) {
     })
 });
 
-app.get('/api/v1/campo/:idCampo/slot/giorno/:data', function (req, res) {
+app.get('/api/v2/campo/:idCampo/slot/giorno/:data', function (req, res) {
     model.getAvailableSlots(req.params.idCampo, req.params.data).then((result) => {
         res.json({success:true, data:result})
     })
@@ -191,7 +192,7 @@ app.get('/api/v1/campo/:idCampo/slot/giorno/:data', function (req, res) {
 // put method is not implemented because it wouldn't be useful specify both old and new values
 // you can delete the old slot and create a new one
 
-app.post('/api/v1/campo/:idCampo/prenota', function (req, res) {
+app.post('/api/v2/campo/:idCampo/prenota', function (req, res) {
     if(authentication.checkIsUtente(req, res)){
 		if (checkPrenotazioneProperties(req.body)) {
 		    model.newPrenotazione(req.loggedUser.id, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
@@ -206,7 +207,7 @@ app.post('/api/v1/campo/:idCampo/prenota', function (req, res) {
 	}
 });
 
-app.get('/api/v1/utenti', function (req, res) {
+app.get('/api/v2/utenti', function (req, res) {
     model.idUtenti().then((utenti) => {
         res.json({success:true, data:utenti})
     })
@@ -237,7 +238,7 @@ function checkCampoProperties(reqBody) {
 
 
 //router cerca campi per nome   
-app.get('/api/v1/campi-nome', (req, res) => {
+app.get('/api/v2/campi-nome', (req, res) => {
 
     model.getCampiPerNome(req.query.nome).then((campi) => {
         if (campi.length === 0) {
@@ -248,7 +249,7 @@ app.get('/api/v1/campi-nome', (req, res) => {
     })
 })
 // router cerca campi per luogo (trova prima le coordinate geografiche del luogo)
-app.get('/api/v1/campi-luogo', async (req, res) => {
+app.get('/api/v2/campi-luogo', async (req, res) => {
 
     if (req.query.luogo == undefined || req.query.luogo == null || req.query.luogo == '' || req.query.raggio == undefined || req.query.raggio == null || isNaN(parseFloat(req.query.raggio))) {
         res.json({ success: false, message: "Luogo or raggio not provided", errno:2 })
@@ -265,7 +266,7 @@ app.get('/api/v1/campi-luogo', async (req, res) => {
 })
 
 // router cerca campi in un raggio
-app.get('/api/v1/campi-raggio', (req, res) => {
+app.get('/api/v2/campi-raggio', (req, res) => {
 
     lat = parseFloat(req.query.lat)
     lng = parseFloat(req.query.lng)
@@ -283,7 +284,7 @@ app.get('/api/v1/campi-raggio', (req, res) => {
 
 })
 
-app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
+app.get('/api/v2/campo/:idCampo/foto', (req, res) => {
     model.getCampo(req.params.idCampo).then(async (campo) => {
 
 
@@ -320,7 +321,7 @@ app.get('/api/v1/campo/:idCampo/foto', (req, res) => {
 })
 
 // router ottiene lista delle prenotazioni del campo
-app.get('/api/v1/campo/:idCampo/prenotazioni', async (req, res) => {
+app.get('/api/v2/campo/:idCampo/prenotazioni', async (req, res) => {
     if(authentication.checkIsGestore(req, res)){
 		checkOwns = await authentication.checkOwnsCampo(req.loggedUser.id, req.params.idCampo);
 		if(!checkOwns)
@@ -335,7 +336,7 @@ app.get('/api/v1/campo/:idCampo/prenotazioni', async (req, res) => {
 })
 
 // router ottiene lista delle prenotazioni in base all'ID dell'utente
-app.get('/api/v1/utente/mie-prenotazioni', (req, res) => {
+app.get('/api/v2/utente/mie-prenotazioni', (req, res) => {
     if(authentication.checkIsUtente(req, res)){
 		model.getListaPrenotazioniUtente(req.loggedUser.id).then((prenotazioni) => {
 		    res.json({success:true, data:prenotazioni})
@@ -346,7 +347,7 @@ app.get('/api/v1/utente/mie-prenotazioni', (req, res) => {
 })
 
 // router ottiene lista dei campi del gestore
-app.get('/api/v1/gestore/miei-campi', (req, res) => {
+app.get('/api/v2/gestore/miei-campi', (req, res) => {
     if(authentication.checkIsGestore(req, res)){
 		model.getListaCampiGestore(req.loggedUser.id).then((campi) => {
 		    res.json({success:true, data:campi})
@@ -357,7 +358,7 @@ app.get('/api/v1/gestore/miei-campi', (req, res) => {
 })
 
 // router elimina la prenotazione effettuata dall'utente
-app.delete('/api/v1/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
+app.delete('/api/v2/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
     if(authentication.checkIsUtente(req, res)){
     	model.deletePrenotazione(req.loggedUser.id, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
         res.json({ success: result.success, message: result.message })

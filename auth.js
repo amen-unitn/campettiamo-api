@@ -1,5 +1,7 @@
 var jwt = require('jsonwebtoken');
 var db = require('./db-model');
+var crypto = require('crypto');
+var sendmail = require('./email');
 const model = new db.Model();
 
 function createAccountUtente(req, res){
@@ -52,6 +54,25 @@ function editAccount(req, res){
 		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
 
+async function recuperoPassword(req, res){
+	let email = req.body.email;
+	if(!email)
+		res.json({success:false, message:"Missing email", errno:2});
+	else{
+  		let length = 10;
+  		let wishlist = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~!@-#$';
+		let password = Array.from(crypto.randomFillSync(new Uint32Array(length)))
+		    .map((x) => wishlist[x % wishlist.length])
+		    .join('');
+		if(model.updatePassword(email, password)){
+			sendmail.sendNewPasswordEmail(email, password);
+			res.json({success:true, message:"Check your inbox"});
+		}else
+			res.json({success:false, message:"User not found", errno:2});
+		
+	}
+}
+
 function deleteAccount(req, res){
 	let userId = req.loggedUser.id;
 	model.deleteAccount(userId).then( (result) => {
@@ -94,6 +115,7 @@ async function checkOwnsCampo(idGestore, idCampo){
 	let result = false;
 	if(campi && campi.length > 0){
 		campi.forEach((campo) => {
+			console.log(campo.id);
 			if(campo.id == idCampo){
 				result = true;
 			}
@@ -132,4 +154,5 @@ const tokenChecker = function(req, res, next) {
 	});
 }
 
-module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente, checkOwnsCampo, createAccountUtente, createAccountGestore, editAccount, deleteAccount, getLoggedAccount};
+module.exports = {generateToken, tokenChecker, checkIsGestore, checkIsUtente, checkOwnsCampo, createAccountUtente, 
+	createAccountGestore, editAccount, deleteAccount, getLoggedAccount, recuperoPassword};
