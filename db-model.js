@@ -10,10 +10,10 @@ class DBModel {
 
     async getCoordinates(indirizzo, cap, citta, provincia) {
         let address = indirizzo + " " + cap + " " + citta + " " + provincia
-        return await getCoordinates(address)
+        return await this.getCoordinatesByString(address)
     }
 
-    async getCoordinates(address) {
+    async getCoordinatesByString(address) {
         address = address.replaceAll(" ", "+")
         let url = process.env.baseGmapsUrl + address + "&key=" + process.env.gmapsKey
         const response = await axios.get(url)
@@ -42,7 +42,8 @@ class DBModel {
         return result
     }
 
-    async getAccount(email) {
+    //returns account + tipologia
+    async getAccountByEmail(email) {
         const session = driver.session()
         let result = null
         try {
@@ -53,6 +54,36 @@ class DBModel {
             let index = labels.indexOf("Account");
             delete labels[index];
             result.tipologia = labels[0];
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+    
+    async updatePassword(email, password) {
+    	const session = driver.session()
+        let result = false;
+        try {
+            let dbResult = await session.run('MATCH (a:Account {email:$email}) SET a.password = $pwd', { "email": email, "pwd":password });
+            result = dbResult.summary.counters._containsUpdates;
+        } catch (error) {
+            console.log(error);
+        } finally {
+            await session.close();
+        }
+        return result;
+    }
+    
+    //returns only account, without tipologia
+    async getAccountById(id) {
+        const session = driver.session()
+        let result = null
+        try {
+            let dbResult = await session.run('MATCH (a:Account {id:$id}) RETURN a', { "id": id })
+            if (dbResult.records && dbResult.records[0])
+                result = dbResult.records[0].get("a").properties;
         } catch (error) {
             console.log(error)
         } finally {
@@ -115,14 +146,16 @@ class DBModel {
     async deleteAccount(id, nome, cognome, email, paypal, telefono, pw){
     	let result = false
         const session = driver.session()
+        const tx = session.beginTransaction()
         try {
-            let dbResult = await session.run(
-                'MATCH (a:Account {id: $id}) DETACH DELETE a', {
-                "id":id});
+            let tx1 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo)-[sr:HAS_SLOT]->(s:Slot) DETACH DELETE s", {"id":id});
+            let tx2 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo) DETACH DELETE c", {"id":id});
+            let tx3 = await tx.run("MATCH (a:Account {id:$id}) DETACH DELETE a", {"id":id});
+            await tx.commit();
             console.log(result);
-            result = dbResult.summary.counters._containsUpdates
-
+            result = tx3.summary.counters._containsUpdates
         } catch (error) {
+            tx.rollback();
             console.log(error)
         } finally {
             await session.close()
@@ -140,11 +173,12 @@ class DBModel {
 
     async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
+        const tx = session.beginTransaction()
         let final = null
         let result
         let coord = await this.getCoordinates(indirizzo, cap, citta, provincia)
         try {
-            result = await session.run('CREATE (c:Campo {id:apoc.create.uuid(), nome:$nome,  ' +
+            result = await tx.run('CREATE (c:Campo {id:apoc.create.uuid(), nome:$nome,  ' +
                 'indirizzo:$indirizzo, cap:$cap, citta:$citta, provincia:$provincia, sport:$sport,  ' +
                 'tariffa:$tariffa, prenotaEntro:$prenotaEntro, lat:$lat, lng:$lng}) RETURN c.id', {
                 "nome": nome,
@@ -158,11 +192,14 @@ class DBModel {
                 "lat": coord.lat,
                 "lng": coord.lng
             })
-            final = await session.run('MATCH (g:Gestore),(c:Campo) WHERE g.id = $gestoreId  ' +
+            final = await tx.run('MATCH (g:Gestore),(c:Campo) WHERE g.id = $gestoreId  ' +
                 'AND c.id = $campoId CREATE (g)-[r:AFFITTA]->(c)',
                 { "gestoreId": idGestore, "campoId": result.records[0].get('c.id') })
+            await tx.commit()
         } catch (error) {
+            tx.rollback()
             console.log(error)
+            return null
         } finally {
             await session.close()
         }
@@ -397,10 +434,10 @@ class DBModel {
         const session = driver.session()
         let result = null
         try {
-            let avaiableSlots = await this.getAvailableSlots(idCampo, data)
-            if (avaiableSlots.length > 0) {
+            let availableSlots = await this.getAvailableSlots(idCampo, data)
+            if (availableSlots.length > 0) {
                 // find which slot is suitable for given time
-                let slot = avaiableSlots.find(slot => {
+                let slot = availableSlots.find(slot => {
                     return slot.oraInizio <= oraInizio+':00Z' && oraFine <= slot.oraFine+':00Z'
                 })
 
