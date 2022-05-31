@@ -359,9 +359,9 @@ app.get('/api/v2/gestore/miei-campi', (req, res) => {
 })
 
 // router elimina la prenotazione effettuata dall'utente
-app.delete('/api/v2/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req, res) => {
+app.delete('/api/v2/utente/elimina-prenotazione/', (req, res) => {
     if(authentication.checkIsUtente(req, res)){
-    	model.deletePrenotazione(req.loggedUser.id, req.params.data, req.params.oraInizio, req.params.oraFine).then((result) => {
+    	model.deletePrenotazione(req.loggedUser.id, req.body.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
         res.json({ success: result.success, message: result.message })
 		}).catch(err => {
 		    res.json({success:false, message:"Error", errno:4})
