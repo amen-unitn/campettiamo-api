@@ -1,4 +1,6 @@
-const app = require('./api')
+const app = require('./api');
+const cron = require('node-cron');
+const model = require('./db-model')
 
 require('dotenv').config() 
 
@@ -14,6 +16,12 @@ const start = (port) => {
       process.exit();
     }
   };
+// this schedule some task every hour
+  cron.schedule('0 * * * *', function() {
+    console.log('running a task every hour');
+    // model.aggiorna_prenotazioni()
+    // model.pulisci_prenotazioni()
+  });
 
   start (port)
 

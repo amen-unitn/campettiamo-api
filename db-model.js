@@ -443,13 +443,15 @@ class DBModel {
 
                 if (slot) {
                     let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}), (u:Utente {id: $idUtente}) ' +
-                        'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}]->(c) ' +
+                        'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine), scadenza_coundown: 24, pagato_FLAG: FALSE}]->(c) ' +
                         'RETURN p.id', {
                         "idCampo": idCampo,
                         "idUtente": idUtente,
                         "data": data,
                         "oraInizio": oraInizio,
                         "oraFine": oraFine
+
+
                     })
                     result = dbResult.records[0].get("p.id")
                 }
@@ -560,6 +562,50 @@ return giorniLiberi
         await session.close()
     }
     return slots
+}
+
+async aggiorna_prenotazioni() {
+
+    const session = driver.session()
+    try {
+        let dbResult = await session.run('MATCH ( p:Prenotazione {confermato_FLAG : FALSE , scadenza_countdown  != 0 } )' +
+          'SET  p.scadenza_countdown = p.scadenza_coundown-1  RETURN p')
+    } catch (error) {
+            console.log(error)
+     } finally {
+            await session.close()
+     }
+
+}
+
+async pulisci_prenotazioni() {
+    const session = driver.session()
+    let result = []
+    try {
+        result = await session.run('MATCH (p:Prenotazione {confermato_FLAG : FALSE , scadenza_countdown  === 0}) ' +
+            'DETACH DELETE p')
+
+    } catch (error) {
+        console.log(error)
+    } finally {
+        await session.close()
+    }
+    return result.summary.counters._stats.nodesDeleted > 0
+}
+
+
+async conferma_prenotazione (prenotazione) {
+
+    const session = driver.session()
+    try {
+        let dbResult = await session.run('MATCH ( p:Prenotazione { confermato_FLAG : FALSE , scadenza_countdown  =! 0 } )' +
+          'SET  p.confermato_FLAG = TRUE  RETURN p')
+    } catch (error) {
+            console.log(error)
+     } finally {
+            await session.close()
+     }
+
 }
 
     async idUtenti() {
