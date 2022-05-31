@@ -106,3 +106,5 @@ dist
 .dccache
 
 
+#env file update
+.env
