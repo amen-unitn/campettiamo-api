@@ -626,12 +626,12 @@ return giorniLiberi
     }
 
     // Elimina se possibile la prenotazione dell'utente
-    async deletePrenotazione(idUtente, data, oraInizio, oraFine, idCampo) {
+    async deletePrenotazione(idUtente, idCampo, data, oraInizio, oraFine) {
         const session = driver.session()
         let result = []
         try {
             result = await session.run(
-                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA] -> (c : Campo {idCampo : $idCampo})\nDELETE p',
+                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nDELETE p',
                 {"idUtente" : idUtente, "data" : data, "oraInizio" : oraInizio, "oraFine" : oraFine, "idCampo" : idCampo}
             )
         } catch (error) {
@@ -639,7 +639,10 @@ return giorniLiberi
         } finally {
             await session.close()
         }
-        return result.summary.counters._stats.nodesDeleted > 0
+        return {
+            "success" : result.records.length == 0 ? true : false,
+            "message" : result.records.length == 0 ? "Prenotazione Delated" : "Prenotazione not found"
+        }
     }
     
     // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
