@@ -374,4 +374,9 @@ app.get('*', function(req, res){
   res.status(404).json({success:false, message:"Invalid path", errno:5});
 });
 
+process.on('exit', async function() {
+  // Add shutdown logic here.
+  await model.onexit()
+});
+
 module.exports = app
