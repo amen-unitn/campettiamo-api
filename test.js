@@ -565,3 +565,70 @@ describe('DELETE Gestore', function(){
 			})
 	})
 })
+
+describe('Ottieni lista dei campi gestore, User= Gestore', function(){
+	it('responds with campi list in json format', function(done){
+		request(app)
+			.get('/api/v2/gestore/miei-campi')
+			.set('x-access-token', tokenGestore)
+      .expect(200)
+			.expect(function(res){
+				assert.deepStrictEqual(res.body.success, true)
+				assert.notDeepStrictEqual(res.body.data.length, 0)
+			})
+			.end(function(err, res){
+				if(err) return done(err)
+				return done()
+			})
+	})
+})
+
+describe('Ottieni lista dei campi gestore, User= Utente', function(){
+	it('responds with campi list in json format', function(done){
+		request(app)
+			.get('/api/v2/gestore/miei-campi')
+			.set('x-access-token', tokenUtente)
+      .expect()
+			.expect(function(res){
+				assert.deepStrictEqual(res.body.success, false)
+				assert.deepStrictEqual(res.body.errno, 17)
+			})
+			.end(function(err, res){
+				if(err) return done(err)
+				return done()
+			})
+	})
+})
+
+describe('Ottieni lista delle prenotazioni utente, User= Utente', function(){
+	it('responds with prenotazioni utente list in json format', function(done){
+		request(app)
+			.get('/api/v2/utente/mie-prenotazioni')
+			.set('x-access-token', tokenUtente)
+      .expect(200)
+			.expect(function(res){
+				assert.deepStrictEqual(res.body.success, true)
+				assert.notDeepStrictEqual(res.body.data.length, 0)
+    	})
+			.end(function(err, res){
+				if(err) return done(err)
+				return done()
+			})
+	})
+})
+
+describe('Ottieni lista delle prenotazioni utente, User= Gestore', function(){
+	it('responds with prenotazioni utente list in json format', function(done){
+		request(app)
+			.get('/api/v2/utente/mie-prenotazioni')
+			.set('x-access-token', tokenGestore)
+			.expect(function(res){
+				assert.deepStrictEqual(res.body.success, false)
+        assert.deepStrictEqual(res.body.errno, 17)
+			})
+			.end(function(err, res){
+				if(err) return done(err)
+				return done()
+			})
+	})
+})

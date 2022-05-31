@@ -355,7 +355,9 @@ app.get('/api/v2/gestore/miei-campi', (req, res) => {
 		}).catch(err => {
 		    res.json({ success: false, message: "Error", errno:4 })
 		})
-    }
+    }else{
+		res.json({success:false, message:"you are the wrong utente", errno:17})
+	}
 })
 
 // router elimina la prenotazione effettuata dall'utente
@@ -366,7 +368,10 @@ app.delete('/api/v2/utente/elimina-prenotazione/:data/:oraInizio/:oraFine', (req
 		}).catch(err => {
 		    res.json({success:false, message:"Error", errno:4})
 		})
-    }
+    }else {
+		res.json({success:false, message:"you are the wrong utente", errno:17})
+	}
+	
 })
 
 //The 404 Route (ALWAYS Keep this as the last route)
