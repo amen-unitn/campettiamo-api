@@ -152,7 +152,6 @@ class DBModel {
             let tx2 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo) DETACH DELETE c", {"id":id});
             let tx3 = await tx.run("MATCH (a:Account {id:$id}) DETACH DELETE a", {"id":id});
             await tx.commit();
-            console.log(result);
             result = tx3.summary.counters._containsUpdates
         } catch (error) {
             tx.rollback();

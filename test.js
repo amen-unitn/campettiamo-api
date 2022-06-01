@@ -4,9 +4,12 @@ const request = require("supertest")
 const body_parser = require("body-parser")
 app.use(body_parser)
 const assert = require('node:assert/strict');
+const createHttpTerminator = require ('http-terminator').createHttpTerminator;
 let tokenUtente = "";
 let tokenGestore = "";
 let campoId = "";
+
+jest.setTimeout(20000);
 
 describe('CREATE Utente', function() {
     it('responds with json', function(done) {
@@ -158,6 +161,7 @@ describe('Cerca campo per nome esistente', function(){
 			.expect(200)
 			.expect(function(res){
 				assert.deepStrictEqual(res.body.success, true)
+				assert.notDeepStrictEqual(res.body.data.length, null)
 				assert.notDeepStrictEqual(res.body.data.length, 0)
 			})
 			.end(function(err, res){
@@ -194,6 +198,7 @@ describe('Cerca campo con luogo valido', function(){
 			.expect(200)
 			.expect(function(res){
 				assert.deepStrictEqual(res.body.success, true)
+				assert.notDeepStrictEqual(res.body.data.length, null)
 				assert.notDeepStrictEqual(res.body.data.length, 0)
 			})
 			.end(function(err, res){
@@ -231,6 +236,7 @@ describe('Cerca campo con coordinate valide', function(){
 			.expect(200)
 			.expect(function(res){
 				assert.deepStrictEqual(res.body.success, true)
+				assert.notDeepStrictEqual(res.body.data.length, null)
 				assert.notDeepStrictEqual(res.body.data.length, 0)
 			})
 			.end(function(err, res){
@@ -494,6 +500,192 @@ describe('Modifica campo, valori NON validi [cap]', function() {
     })
 })
 
+
+describe('Crea nuovo slot nel campo x per (oggi + 2 giorni)', function() {
+    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now() + 86400*1000).toISOString().split('T')[1].slice(0,8)
+    let endTime = new Date(Date.now() + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,8)
+    
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/campo/'+campoId +'/slot')
+        .set('x-access-token', tokenGestore)
+        .send({
+          "data": today,
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+describe('Cerca slots nel campo x', function() {
+    it('responds with json', function(done) {
+      request(app)
+        .get('/api/v2/campo/'+campoId + '/slots')
+        .set('x-access-token', tokenUtente)
+        .send()
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+        	assert.notDeepStrictEqual(res.body.data.length, null)
+        	assert.notDeepStrictEqual(res.body.data.length, 0)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+
+describe('Crea OVERLAPPING slot nel campo x (per oggi + 2 giorni)', function() {
+    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now() + 86400*1000).toISOString().split('T')[1].slice(0,8)
+    let endTime = new Date(Date.now() + 86400*1000 +2*60*60*1000).toISOString().split('T')[1].slice(0,8)
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/campo/'+campoId+'/slot')
+        .set('x-access-token', tokenGestore)
+        .send({
+          "data": today,
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, false)
+        	assert.deepStrictEqual(res.body.errno, 2)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+describe('Crea slot con data passata nel campo x', function() {
+    let today = new Date()
+    today = today.toISOString().split('T')[0]
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/campo/'+campoId+'/slot')
+        .set('x-access-token', tokenGestore)
+        .send({
+          "data": '2020-12-06',
+          "oraInizio": '10',
+          "oraFine": '11',
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, false)
+        	assert.deepStrictEqual(res.body.errno, 2)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+
+describe('Cerca slots liberi nel campo x per (oggi + 2 giorni)', function() {
+    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
+    it('responds with json', function(done) {
+      request(app)
+        .get('/api/v2/campo/'+campoId + '/slot/giorno/'+today)
+        .set('x-access-token', tokenUtente)
+        .send()
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+        	assert.notDeepStrictEqual(res.body.data.length, null)
+        	assert.notDeepStrictEqual(res.body.data.length, 0)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+describe('Cerca giorni con slots liberi nel campo x per il mese corrente (oggi + 2 giorni)', function() {
+    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
+    let thisMonth = today.slice(0,7)
+    it('responds with json', function(done) {
+      request(app)
+        .get('/api/v2/campo/'+campoId + '/slot/mese/'+thisMonth)
+        .set('x-access-token', tokenUtente)
+        .send()
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+        	assert.notDeepStrictEqual(res.body.data.length, null)
+        	assert.notDeepStrictEqual(res.body.data.length, 0)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+describe('Elimina slot esistente', function() {
+    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now() + 86400*1000).toISOString().split('T')[1].slice(0,8)
+    let endTime = new Date(Date.now() + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,8)
+    it('responds with json', function(done) {
+      request(app)
+        .delete('/api/v2/campo/'+campoId+'/slot')
+        .set('x-access-token', tokenGestore)
+        .send({
+          "data": today,
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	assert.deepStrictEqual(res.body.success, true)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+describe('Cerca campi gestore', function() {
+    it('responds with json', function(done) {
+      request(app)
+        .get('/api/v2/gestore/miei-campi')
+        .set('x-access-token', tokenGestore)
+        .send()
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+        	assert.notDeepStrictEqual(res.body.data.length, null)
+        	assert.notDeepStrictEqual(res.body.data.length, 0)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
 
 
 describe('Elimina campo esistente', function() {
