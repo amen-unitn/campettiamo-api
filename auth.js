@@ -8,14 +8,19 @@ const model = new db.Model();
 function createAccountUtente(req, res) {
 	if (checkNewUserProperties(req.body)) {
 		model.createUtente(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
-			paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono, (paypal) => {
+			if(id != null){
+				paypal.addPayPalUserInVault(req.body.nome, req.body.cognome, req.body.paypal, req.body.telefono, (paypal) => {
 				if (paypal != null)
 					res.json({ success: true, message: "Utente creato", id: id });
 				else
 					res.json({ success: false, message: "PayPal id non ritornato" });
-			}, err => {
-				res.json({ success: false, message: "Errore nel salvataggio dell'account PayPal" });
-			});
+				}, err => {
+					res.json({ success: false, message: "Errore nel salvataggio dell'account PayPal" });
+				});
+			}else{
+				res.json({ success: false, message: "Errore nella registrazione dell'utente. Controlla che la mail non sia già stata usata." });
+			}
+			
 		}).catch(err => {
 			res.json({success:false, message:"Errore nella registrazione dell'utente", errno:4});
 		});

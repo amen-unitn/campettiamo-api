@@ -8,6 +8,8 @@ const createHttpTerminator = require ('http-terminator').createHttpTerminator;
 let tokenUtente = "";
 let tokenGestore = "";
 let campoId = "";
+let prenData, prenStart, prenEnd;
+let timeOffset = new Date().getTimezoneOffset()*60*1000;
 
 jest.setTimeout(20000);
 
@@ -25,6 +27,7 @@ describe('CREATE Utente', function() {
         })
         .expect(200)
         .expect(function(res) {
+        	//console.log(res.body)
         	assert.deepStrictEqual(res.body.success, true)
           })
         .end(function(err, res) {
@@ -69,6 +72,7 @@ describe('CREATE Gestore', function() {
         })
         .expect(200)
         .expect(function(res) {
+        	//console.log(res.body)
         	assert.deepStrictEqual(res.body.success, true)
           })
         .end(function(err, res) {
@@ -97,6 +101,32 @@ describe('LOGIN Gestore', function(){
 			})
   	})
 }) 
+
+
+describe('MODIFICA Utente', function() {
+    it('responds with json', function(done) {
+      request(app)
+        .put('/api/v2/utente')
+        .set('x-access-token', tokenUtente)
+        .send({
+          "email": 'prova2@me.it',
+          "nome": 'utente',
+          "cognome": 'prova',
+          'paypal': 'prova2@me.it',
+          'telefono': '1234567890',
+          'password':'s539#fnak043@q'
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
 
 describe('Cerca campo per id valido', function(){
 	it('responds with json', function(done){
@@ -296,7 +326,7 @@ describe('Crea nuovo campo, valori validi', function() {
           'provincia': 'Trento',
           'sport':'PallaCorda',
           'tariffa':42,
-          'prenotaEntro':24
+          'prenotaEntro':48
         })
         .expect(200)
         .expect(function(res) {
@@ -324,7 +354,7 @@ describe('Crea nuovo campo, valori NON validi [tariffa]', function() {
           'provincia': 'Trento',
           'sport':'PallaCorda',
           'tariffa':'trenta euro',
-          'prenotaEntro':24
+          'prenotaEntro':48
         })
         .expect(200)
         .expect(function(res) {
@@ -378,7 +408,7 @@ describe('Crea nuovo campo, valori NON validi [cap]', function() {
           'provincia': 'Trento',
           'sport':'PallaCorda',
           'tariffa':30,
-          'prenotaEntro': 24
+          'prenotaEntro': 48
         })
         .expect(200)
         .expect(function(res) {
@@ -405,7 +435,7 @@ describe('Modifica campo, valori validi', function() {
           'provincia': 'Trento',
           'sport':'PallaCorda',
           'tariffa':88,
-          'prenotaEntro':24
+          'prenotaEntro':48
         })
         .expect(200)
         .expect(function(res) {
@@ -432,7 +462,7 @@ describe('Modifica campo, valori NON validi [tariffa]', function() {
           'provincia': 'Trento',
           'sport':'PallaCorda',
           'tariffa':'millle',
-          'prenotaEntro':24
+          'prenotaEntro':48
         })
         .expect(200)
         .expect(function(res) {
@@ -486,7 +516,7 @@ describe('Modifica campo, valori NON validi [cap]', function() {
           'provincia': 'Trento',
           'sport':'PallaCorda',
           'tariffa':88,
-          'prenotaEntro':24
+          'prenotaEntro':48
         })
         .expect(200)
         .expect(function(res) {
@@ -502,9 +532,9 @@ describe('Modifica campo, valori NON validi [cap]', function() {
 
 
 describe('Crea nuovo slot nel campo x per (oggi + 2 giorni)', function() {
-    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
-    let startTime = new Date(Date.now() + 86400*1000).toISOString().split('T')[1].slice(0,8)
-    let endTime = new Date(Date.now() + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,8)
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 86400*1000 -4*60*60*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,5)
     
     it('responds with json', function(done) {
       request(app)
@@ -517,7 +547,7 @@ describe('Crea nuovo slot nel campo x per (oggi + 2 giorni)', function() {
         })
         .expect(200)
         .expect(function(res) {
-        	//console.log(res.body)
+        	////console.log(res.body)
         	assert.deepStrictEqual(res.body.success, true)
           })
         .end(function(err, res) {
@@ -535,7 +565,7 @@ describe('Cerca slots nel campo x', function() {
         .send()
         .expect(200)
         .expect(function(res) {
-        	//console.log(res.body)
+        	////console.log(res.body)
         	assert.deepStrictEqual(res.body.success, true)
         	assert.notDeepStrictEqual(res.body.data.length, null)
         	assert.notDeepStrictEqual(res.body.data.length, 0)
@@ -549,9 +579,9 @@ describe('Cerca slots nel campo x', function() {
 
 
 describe('Crea OVERLAPPING slot nel campo x (per oggi + 2 giorni)', function() {
-    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
-    let startTime = new Date(Date.now() + 86400*1000).toISOString().split('T')[1].slice(0,8)
-    let endTime = new Date(Date.now() + 86400*1000 +2*60*60*1000).toISOString().split('T')[1].slice(0,8)
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 2*86400*1000 +2*60*60*1000).toISOString().split('T')[1].slice(0,5)
     it('responds with json', function(done) {
       request(app)
         .post('/api/v2/campo/'+campoId+'/slot')
@@ -563,7 +593,7 @@ describe('Crea OVERLAPPING slot nel campo x (per oggi + 2 giorni)', function() {
         })
         .expect(200)
         .expect(function(res) {
-        	//console.log(res.body)
+        	////console.log(res.body)
         	assert.deepStrictEqual(res.body.success, false)
         	assert.deepStrictEqual(res.body.errno, 2)
           })
@@ -575,8 +605,6 @@ describe('Crea OVERLAPPING slot nel campo x (per oggi + 2 giorni)', function() {
 })
 
 describe('Crea slot con data passata nel campo x', function() {
-    let today = new Date()
-    today = today.toISOString().split('T')[0]
     it('responds with json', function(done) {
       request(app)
         .post('/api/v2/campo/'+campoId+'/slot')
@@ -588,7 +616,7 @@ describe('Crea slot con data passata nel campo x', function() {
         })
         .expect(200)
         .expect(function(res) {
-        	//console.log(res.body)
+        	////console.log(res.body)
         	assert.deepStrictEqual(res.body.success, false)
         	assert.deepStrictEqual(res.body.errno, 2)
           })
@@ -601,7 +629,7 @@ describe('Crea slot con data passata nel campo x', function() {
 
 
 describe('Cerca slots liberi nel campo x per (oggi + 2 giorni)', function() {
-    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
     it('responds with json', function(done) {
       request(app)
         .get('/api/v2/campo/'+campoId + '/slot/giorno/'+today)
@@ -609,7 +637,7 @@ describe('Cerca slots liberi nel campo x per (oggi + 2 giorni)', function() {
         .send()
         .expect(200)
         .expect(function(res) {
-        	//console.log(res.body)
+        	////console.log(res.body)
         	assert.deepStrictEqual(res.body.success, true)
         	assert.notDeepStrictEqual(res.body.data.length, null)
         	assert.notDeepStrictEqual(res.body.data.length, 0)
@@ -622,7 +650,7 @@ describe('Cerca slots liberi nel campo x per (oggi + 2 giorni)', function() {
 })
 
 describe('Cerca giorni con slots liberi nel campo x per il mese corrente (oggi + 2 giorni)', function() {
-    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
     let thisMonth = today.slice(0,7)
     it('responds with json', function(done) {
       request(app)
@@ -631,7 +659,7 @@ describe('Cerca giorni con slots liberi nel campo x per il mese corrente (oggi +
         .send()
         .expect(200)
         .expect(function(res) {
-        	//console.log(res.body)
+        	////console.log(res.body)
         	assert.deepStrictEqual(res.body.success, true)
         	assert.notDeepStrictEqual(res.body.data.length, null)
         	assert.notDeepStrictEqual(res.body.data.length, 0)
@@ -643,10 +671,190 @@ describe('Cerca giorni con slots liberi nel campo x per il mese corrente (oggi +
     })
 })
 
-describe('Elimina slot esistente', function() {
-    let today = new Date(Date.now() + 2*86400*1000).toISOString().split('T')[0]
-    let startTime = new Date(Date.now() + 86400*1000).toISOString().split('T')[1].slice(0,8)
-    let endTime = new Date(Date.now() + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,8)
+
+describe('Crea prenotazione slot libero campetto x', function() {
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 2*86400*1000 +1*60*60*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 2*86400*1000 +2*60*60*1000).toISOString().split('T')[1].slice(0,5)
+    prenData = today
+    prenStart = startTime
+    prenEnd = endTime
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/campo/'+campoId+'/prenota')
+        .set('x-access-token', tokenUtente)
+        .send({
+          "data": today,
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+
+describe('Crea prenotazione slot libero campetto x MENO DI 48 ORE PRIMA', function() {
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 2*86400*1000 -2*60*60*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[1].slice(0,5)
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/campo/'+campoId+'/prenota')
+        .set('x-access-token', tokenUtente)
+        .send({
+          "data": today,
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log("MENO DI 48H PRIMA")
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, false)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+
+describe('Crea prenotazione slot GIÀ PRENOTATO campetto x', function() {
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 2*86400*1000 +3*60*60*1000).toISOString().split('T')[1].slice(0,5)
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/campo/'+campoId+'/prenota')
+        .set('x-access-token', tokenUtente)
+        .send({
+          "data": today,
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, false)
+        	assert.deepStrictEqual(res.body.errno, 2)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+
+describe('Crea prenotazione con PARAMETRI ERRATI', function() {
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 2*86400*1000 +3*60*60*1000).toISOString().split('T')[1].slice(0,5)
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/campo/'+campoId+'/prenota')
+        .set('x-access-token', tokenUtente)
+        .send({
+          "data": "laMiaData",
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, false)
+        	assert.deepStrictEqual(res.body.errno, 2)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+
+describe('Ottieni lista delle prenotazioni utente, User= Utente', function(){
+ it('responds with prenotazioni utente list in json format', function(done){
+  request(app)
+   .get('/api/v2/utente/mie-prenotazioni')
+   .set('x-access-token', tokenUtente)
+      .expect(200)
+   .expect(function(res){
+    assert.deepStrictEqual(res.body.success, true)
+    assert.notDeepStrictEqual(res.body.data.length, 0)
+     })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
+
+describe('Ottieni lista delle prenotazioni utente, User= Gestore', function(){
+ it('responds with prenotazioni utente list in json format', function(done){
+  request(app)
+   .get('/api/v2/utente/mie-prenotazioni')
+   .set('x-access-token', tokenGestore)
+   .expect(function(res){
+    assert.deepStrictEqual(res.body.success, false)
+        assert.deepStrictEqual(res.body.errno, 1)
+   })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
+
+
+describe('Ottieni lista delle prenotazioni del campo', function(){
+ it('responds with campos prenptazioni list in json format', function(done){
+  request(app)
+   .get('/api/v2/campo/'+campoId+'/prenotazioni')
+   .set('x-access-token', tokenGestore)
+   .expect(function(res){
+    assert.deepStrictEqual(res.body.success, true)
+    assert.notDeepStrictEqual(res.body.data.length, 0)
+          
+   })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
+
+
+describe('Ottieni lista delle prenotazioni del campo', function(){
+ it('responds with campos prenotazioni list in json format', function(done){
+  request(app)
+   .get('/api/v2/campo/'+campoId+'/prenotazioni')
+   .set('x-access-token', tokenUtente)
+   .expect(function(res){
+    assert.deepStrictEqual(res.body.success, false)
+    assert.deepStrictEqual(res.body.errno, 3)
+          
+   })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
+
+describe('Elimina slot esistente CON PRENOTAZIONI', function() {
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 86400*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,5)
     it('responds with json', function(done) {
       request(app)
         .delete('/api/v2/campo/'+campoId+'/slot')
@@ -658,7 +866,8 @@ describe('Elimina slot esistente', function() {
         })
         .expect(200)
         .expect(function(res) {
-        	assert.deepStrictEqual(res.body.success, true)
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, false)
           })
         .end(function(err, res) {
           if (err) return done(err)
@@ -667,18 +876,21 @@ describe('Elimina slot esistente', function() {
     })
 })
 
-describe('Cerca campi gestore', function() {
+
+describe('Elimina prenotazione esistente', function() {
     it('responds with json', function(done) {
       request(app)
-        .get('/api/v2/gestore/miei-campi')
-        .set('x-access-token', tokenGestore)
-        .send()
+        .delete('/api/v2/campo/'+campoId+'/prenota')
+        .set('x-access-token', tokenUtente)
+        .send({
+          "data": prenData,
+          "oraInizio": prenStart,
+          "oraFine": prenEnd,
+        })
         .expect(200)
         .expect(function(res) {
         	//console.log(res.body)
         	assert.deepStrictEqual(res.body.success, true)
-        	assert.notDeepStrictEqual(res.body.data.length, null)
-        	assert.notDeepStrictEqual(res.body.data.length, 0)
           })
         .end(function(err, res) {
           if (err) return done(err)
@@ -687,6 +899,96 @@ describe('Cerca campi gestore', function() {
     })
 })
 
+
+describe('Elimina slot esistente SENZA PRENOTAZIONI', function() {
+    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
+    let startTime = new Date(Date.now()-timeOffset + 86400*1000).toISOString().split('T')[1].slice(0,5)
+    let endTime = new Date(Date.now()-timeOffset + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,5)
+    it('responds with json', function(done) {
+      request(app)
+        .delete('/api/v2/campo/'+campoId+'/slot')
+        .set('x-access-token', tokenGestore)
+        .send({
+          "data": today,
+          "oraInizio": startTime,
+          "oraFine": endTime,
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, true)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+describe('Ottieni lista dei campi gestore, User= Gestore', function(){
+ it('responds with campi list in json format', function(done){
+  request(app)
+   .get('/api/v2/gestore/miei-campi')
+   .set('x-access-token', tokenGestore)
+      .expect(200)
+   .expect(function(res){
+    assert.deepStrictEqual(res.body.success, true)
+    assert.notDeepStrictEqual(res.body.data.length, 0)
+   })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
+
+describe('Ottieni lista dei campi gestore, User= Utente', function(){
+ it('responds with campi list in json format', function(done){
+  request(app)
+   .get('/api/v2/gestore/miei-campi')
+   .set('x-access-token', tokenUtente)
+   .expect(function(res){
+    assert.deepStrictEqual(res.body.success, false)
+    assert.deepStrictEqual(res.body.errno, 1)
+   })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
+
+describe('Ottieni foto di un campo esistente', function(){
+ it('responds with an image', function(done){
+  request(app)
+   .get('/api/v2/campo/'+campoId+'/foto')
+   .set('x-access-token', tokenUtente)
+   .expect(function(res){
+    res != null
+         })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
+
+describe('Ottieni foto di un campo NON esistente', function(){
+ it('responds with an image', function(done){
+  request(app)
+   .get('/api/v2/campo/nonUnCampo/foto')
+   .set('x-access-token', tokenUtente)
+   .expect(function(res){
+    assert.deepStrictEqual(res.body.success, false)
+    assert.notDeepStrictEqual(res.body.errno, 2)
+
+         })
+   .end(function(err, res){
+    if(err) return done(err)
+    return done()
+   })
+ })
+})
 
 describe('Elimina campo esistente', function() {
     it('responds with json', function(done) {
@@ -713,6 +1015,55 @@ describe('Elimina campo INesistente', function() {
         .send()
         .expect(200)
         .expect(function(res) {
+        	assert.deepStrictEqual(res.body.success, false)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+
+describe('CREATE Utente (con mail già usata da altro utente)', function() {
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/utente')
+        .send({
+          "email": 'prova@me.it',
+          "nome": 'utente',
+          "cognome": 'prova',
+          'paypal': 'prova@me.it',
+          'telefono': '1234567890',
+          'password':'s539#fnak043@q'
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
+        	assert.deepStrictEqual(res.body.success, false)
+          })
+        .end(function(err, res) {
+          if (err) return done(err)
+          return done()
+        })
+    })
+})
+
+describe('CREATE Utente (con mail già usata da gestore)', function() {
+    it('responds with json', function(done) {
+      request(app)
+        .post('/api/v2/utente')
+        .send({
+          "email": 'provagest@me.it',
+          "nome": 'utente',
+          "cognome": 'prova',
+          'paypal': 'prova@me.it',
+          'telefono': '1234567890',
+          'password':'s539#fnak043@q'
+        })
+        .expect(200)
+        .expect(function(res) {
+        	//console.log(res.body)
         	assert.deepStrictEqual(res.body.success, false)
           })
         .end(function(err, res) {
@@ -757,3 +1108,4 @@ describe('DELETE Gestore', function(){
 			})
 	})
 })
+

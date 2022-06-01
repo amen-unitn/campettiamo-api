@@ -184,6 +184,7 @@ app.delete('/api/v2/campo/:id', async (req, res) => {
 app.post('/api/v2/campo/:idCampo/prenota', function (req, res) {
     if(authentication.checkIsUtente(req, res)){
 		if (checkPrenotazioneProperties(req.body)) {
+			console.log(req.body)
 		    model.newPrenotazione(req.loggedUser.id, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 		        if (result)
 		            res.json({ success: true, message: "Prenotazione created", id: result })
@@ -196,7 +197,83 @@ app.post('/api/v2/campo/:idCampo/prenota', function (req, res) {
 	}
 });
 
-// router ottiene la foto del campo su StreetView
+app.get('/api/v2/utenti', function (req, res) {
+    model.idUtenti().then((utenti) => {
+        res.json({success:true, data:utenti})
+    })
+});
+
+function checkSlotProperties(reqBody) {
+    return reqBody.data != undefined && reqBody.data != null &&
+        reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
+        reqBody.oraFine != undefined && reqBody.oraFine != null
+}
+
+function checkPrenotazioneProperties(reqBody) {
+    return reqBody.data != undefined && reqBody.data != null && !isNaN(new Date(reqBody.data).getTime()) &&
+        reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
+        reqBody.oraFine != undefined && reqBody.oraFine != null
+}
+
+function checkCampoProperties(reqBody) {
+    return reqBody.nome != undefined && reqBody.nome != null &&
+        reqBody.indirizzo != undefined && reqBody.indirizzo != null &&
+        reqBody.cap != undefined && reqBody.cap != null && !isNaN(reqBody.cap) &&
+        reqBody.citta != undefined && reqBody.citta != null &&
+        reqBody.provincia != undefined && reqBody.provincia != null &&
+        reqBody.sport != undefined && reqBody.sport != null &&
+        reqBody.tariffa != undefined && reqBody.tariffa != null && !isNaN(reqBody.tariffa) &&
+        reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null && !isNaN(reqBody.prenotaEntro)
+}
+
+
+//router cerca campi per nome   
+app.get('/api/v2/campi-nome', (req, res) => {
+
+    model.getCampiPerNome(req.query.nome).then((campi) => {
+        if (campi.length === 0) {
+            res.json({ success: false, message: "campetto inesistente", errno:2 })
+        } else {
+            res.json({success:true, data:campi})
+        }
+    })
+})
+// router cerca campi per luogo (trova prima le coordinate geografiche del luogo)
+app.get('/api/v2/campi-luogo', async (req, res) => {
+
+    if (req.query.luogo == undefined || req.query.luogo == null || req.query.luogo == '' || req.query.raggio == undefined || req.query.raggio == null || isNaN(parseFloat(req.query.raggio))) {
+        res.json({ success: false, message: "Luogo or raggio not provided", errno:2 })
+    } else {
+        coord = await model.getCoordinates(req.query.luogo)
+
+        model.getCampiNelRaggio(coord.lat, coord.lng, parseFloat(req.query.raggio)).then((campi) => {
+            res.json({success:true, data:campi})
+        }).catch(err => {
+            res.json({ success: false, message: "Error", errno:4 })
+        })
+    }
+
+})
+
+// router cerca campi in un raggio
+app.get('/api/v2/campi-raggio', (req, res) => {
+
+    lat = parseFloat(req.query.lat)
+    lng = parseFloat(req.query.lng)
+    raggio = parseFloat(req.query.raggio)
+
+    if (isNaN(lat) || isNaN(lng) || isNaN(raggio)) {
+        res.json({ success: false, message: "Error on finding data", errno:2 })
+    } else {
+        model.getCampiNelRaggio(parseFloat(req.query.lat), parseFloat(req.query.lng), parseFloat(req.query.raggio)).then((campi) => {
+            res.json({success:true, data:campi})
+        }).catch(err => {
+            res.json({ success: false, message: "Error", errno:4 })
+        })
+    }
+
+})
+
 app.get('/api/v2/campo/:idCampo/foto', (req, res) => {
     model.getCampo(req.params.idCampo).then(async (campo) => {
 
@@ -361,62 +438,20 @@ app.get('/api/v2/gestore/miei-campi', (req, res) => {
     }
 })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ------------------------------------------------------> UTILITIES <--------------------------------------------------
-
-
-// router ottiene lista di utenti
-app.get('/api/v2/utenti', function (req, res) {
-    model.idUtenti().then((utenti) => {
-        res.json({success:true, data:utenti})
-    })
-});
-
-function checkSlotProperties(reqBody) {
-    return reqBody.data != undefined && reqBody.data != null &&
-        reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
-        reqBody.oraFine != undefined && reqBody.oraFine != null
-}
-
-function checkPrenotazioneProperties(reqBody) {
-    return reqBody.data != undefined && reqBody.data != null &&
-        reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
-        reqBody.oraFine != undefined && reqBody.oraFine != null
-}
-
-function checkCampoProperties(reqBody) {
-    return reqBody.nome != undefined && reqBody.nome != null &&
-        reqBody.indirizzo != undefined && reqBody.indirizzo != null &&
-        reqBody.cap != undefined && reqBody.cap != null && !isNaN(reqBody.cap) &&
-        reqBody.citta != undefined && reqBody.citta != null &&
-        reqBody.provincia != undefined && reqBody.provincia != null &&
-        reqBody.sport != undefined && reqBody.sport != null &&
-        reqBody.tariffa != undefined && reqBody.tariffa != null && !isNaN(reqBody.tariffa) &&
-        reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null && !isNaN(reqBody.prenotaEntro)
-}
+// router elimina la prenotazione effettuata dall'utente
+app.delete('/api/v2/campo/:id/prenota', (req, res) => {
+    if(authentication.checkIsUtente(req, res)){
+    	model.deletePrenotazione(req.loggedUser.id, req.params.id, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+    		if(result)
+        		res.json({ success: true, message: "Prenotazione deleted" })
+        	else
+        		res.json({ success: false, message: "Error on delete prenotazione - it is not possible to delete a prenotazione less than 24 hours before" })
+		}).catch(err => {
+			console.log(err)
+		    	res.json({success:false, message:"Error", errno:4})
+		})
+    }
+})
 
 //The 404 Route (ALWAYS Keep this as the last route)
 app.get('*', function(req, res){
