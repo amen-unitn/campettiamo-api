@@ -442,7 +442,7 @@ class DBModel {
 
                 if (slot) {
                     let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}), (u:Utente {id: $idUtente}) ' +
-                        'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}]->(c) ' +
+                        'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine), idUtente : $idUtente}]->(c) ' +
                         'RETURN p.id', {
                         "idCampo": idCampo,
                         "idUtente": idUtente,
