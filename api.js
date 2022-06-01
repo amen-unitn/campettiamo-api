@@ -290,18 +290,19 @@ app.get('/api/v2/campo/:idCampo/foto', (req, res) => {
                 method: 'GET',
                 responseType: 'stream'
             })
+            
 
-            const writer = Fs.createWriteStream(path)
-            response_strview.data.pipe(writer)
-            writer.on('finish', () => {
-                res.download(path, () => {
-                    //after sending to client, delete picture
-                    Fs.unlink(path, () => { })
-                })
-            })
-            writer.on('error', (err) => {
-                res.json({ success: false, message: err, errno:4 })
-            })
+            res.set('Content-Type', 'image/jpeg');
+              const chunks = [];
+
+		  response_strview.data.on("data", function (chunk) {
+		    chunks.push(chunk);
+		  });
+
+		  // Send the buffer or you can put it into a var
+		  response_strview.data.on("end", function () {
+		    res.send(Buffer.concat(chunks));
+		  });
 
         }
     }).catch((err) => {
