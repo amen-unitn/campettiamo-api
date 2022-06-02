@@ -23,7 +23,7 @@ class DBModel {
         //returns an object {lat:value, lng:value}
     }
     
-    async getAccount(email){
+    /*async getAccount(email){
     	const session = driver.session()
         let result = null
         try {
@@ -40,7 +40,7 @@ class DBModel {
             await session.close()
         }
         return result
-    }
+    }*/
 
     //returns account + tipologia
     async getAccountByEmail(email) {
@@ -48,12 +48,13 @@ class DBModel {
         let result = null
         try {
             let dbResult = await session.run('MATCH (a:Account {email:$email}) RETURN a, labels(a)', { "email": email })
-            if (dbResult.records && dbResult.records[0])
-                result = dbResult.records[0].get("a").properties;
-            let labels = dbResult.records[0].get("a").labels;
-            let index = labels.indexOf("Account");
-            delete labels[index];
-            result.tipologia = labels[0];
+            if (dbResult.records && dbResult.records[0]){
+            	result = dbResult.records[0].get("a").properties;
+		let labels = dbResult.records[0].get("a").labels;
+		let index = labels.indexOf("Account");
+		delete labels[index];
+		result.tipologia = labels[0];
+            } 
         } catch (error) {
             console.log(error)
         } finally {
@@ -91,55 +92,67 @@ class DBModel {
         }
         return result
     }
+    
 
     async createAccount(nome, cognome, email, paypal, telefono, pw, tipologia) {
+    	//controllo che l'email non sia già usata
+    	let stessaMail = await this.getAccountByEmail(email);
+    	//console.log(stessaMail)
+	if(stessaMail === null){
+		let result
+		const session = driver.session()
+		try {
+		    result = await session.run(
+		        'CREATE (a:Account: ' + tipologia + ' {id:apoc.create.uuid(), nome:$nome,  ' +
+		        'cognome:$cognome, email:$email, account_paypal:$account_paypal,  ' +
+		        'telefono: $telefono, password:$pw}) RETURN a.id', {
+		        "nome": nome,
+		        "cognome": cognome,
+		        "email": email,
+		        "account_paypal": paypal,
+		        "telefono": telefono,
+		        "pw": pw
+		    })
 
-        let result = null
-        const session = driver.session()
-        try {
-            result = await session.run(
-                'CREATE (a:Account: ' + tipologia + ' {id:apoc.create.uuid(), nome:$nome,  ' +
-                'cognome:$cognome, email:$email, account_paypal:$account_paypal,  ' +
-                'telefono: $telefono, password:$pw}) RETURN a.id', {
-                "nome": nome,
-                "cognome": cognome,
-                "email": email,
-                "account_paypal": paypal,
-                "telefono": telefono,
-                "pw": pw
-            })
-
-        } catch (error) {
-            console.log(error)
-        } finally {
-            await session.close()
-        }
-        return result.records[0].get('a.id')
+		} catch (error) {
+		    console.log(error)
+		} finally {
+		    await session.close()
+		}
+		return result.records[0].get('a.id')
+	}	
+	return null;
     }
     
     async editAccount(id, nome, cognome, email, paypal, telefono, pw){
     	let result = false
-        const session = driver.session()
-        try {
-            let dbResult = await session.run(
-                'MATCH (a:Account {id: $id}) SET a.nome = $nome,  ' +
-                'a.cognome = $cognome, a.email = $email, a.account_paypal = $account_paypal,  ' +
-                'a.telefono = $telefono, a.password = $pw', {
-                "id":id,
-                "nome": nome,
-                "cognome": cognome,
-                "email": email,
-                "account_paypal": paypal,
-                "telefono": telefono,
-                "pw": pw
-            });
-            result = dbResult.summary.counters._containsUpdates
+    	//console.log("id = " + id)
+    	let stessaMail = await this.getAccountByEmail(email);
+    	//console.log(stessaMail)
+    	if(stessaMail === null || stessaMail.id == id){
+    		//se l'email viene cambiata, deve essere non già usata (oppure l'email non viene cambiata, quindi resta la stessa dell'utente)
+    		const session = driver.session()
+		try {
+		    let dbResult = await session.run(
+		        'MATCH (a:Account {id: $id}) SET a.nome = $nome,  ' +
+		        'a.cognome = $cognome, a.email = $email, a.account_paypal = $account_paypal,  ' +
+		        'a.telefono = $telefono, a.password = $pw', {
+		        "id":id,
+		        "nome": nome,
+		        "cognome": cognome,
+		        "email": email,
+		        "account_paypal": paypal,
+		        "telefono": telefono,
+		        "pw": pw
+		    });
+		    result = dbResult.summary.counters._containsUpdates
 
-        } catch (error) {
-            console.log(error)
-        } finally {
-            await session.close()
-        }
+		} catch (error) {
+		    console.log(error)
+		} finally {
+		    await session.close()
+		}
+    	}
         return result
     }
     
@@ -435,14 +448,16 @@ class DBModel {
         try {
             let availableSlots = await this.getAvailableSlots(idCampo, data)
             if (availableSlots.length > 0) {
+            	console.log(availableSlots)
                 // find which slot is suitable for given time
                 let slot = availableSlots.find(slot => {
                     return slot.oraInizio <= oraInizio+':00Z' && oraFine <= slot.oraFine+':00Z'
                 })
+                console.log(slot)
 
                 if (slot) {
                     let dbResult = await session.run('MATCH (c:Campo {id: $idCampo}), (u:Utente {id: $idUtente}) ' +
-                        'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}]->(c) ' +
+                        'CREATE (u)-[p:PRENOTA {id: apoc.create.uuid(), data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine), idUtente : $idUtente}]->(c) ' +
                         'RETURN p.id', {
                         "idCampo": idCampo,
                         "idUtente": idUtente,
@@ -548,7 +563,9 @@ return giorniLiberi
             }
         })
         slots = slots.filter(s => {
-            let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - new Date().getTime()) / 3600000
+            let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - (new Date().getTime())) / 3600000
+            //console.log("diff (hours) = " + diff)
+            //console.log("prenota entro = " + prenotaEntro)
             return diff > prenotaEntro
         })
     }
@@ -624,24 +641,37 @@ return giorniLiberi
         return result
     }
 
-    // Elimina se possibile la prenotazione dell'utente
+    // Elimina se possibile la prenotazione dell'utente (max entro 24h prima)
     async deletePrenotazione(idUtente, idCampo, data, oraInizio, oraFine) {
         const session = driver.session()
-        let result = []
+        let result = false
         try {
-            result = await session.run(
-                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nDELETE p',
+            let result1 = await session.run(
+                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nRETURN p',
                 {"idUtente" : idUtente, "data" : data, "oraInizio" : oraInizio, "oraFine" : oraFine, "idCampo" : idCampo}
             )
+            if(result1.records.length > 0){
+            		let dataControllo = result1.records[0].get("p").properties.data;
+		    let oraInizioControllo = result1.records[0].get("p").properties.oraInizio;
+		    let d = new Date(dataControllo + "T" + oraInizioControllo);
+		    //console.log(d)
+		    let check = (d.getTime() - (Date.now())) > (86400*1000);
+		    if(check){
+		    	let result2 = await session.run(
+			    'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nDELETE p',
+			    {"idUtente" : idUtente, "data" : data, "oraInizio" : oraInizio, "oraFine" : oraFine, "idCampo" : idCampo}
+			)
+			result = result2.summary.counters._stats.relationshipsDeleted > 0
+		    }
+            
+            }
+            
         } catch (error) {
             console.log(error)
         } finally {
             await session.close()
         }
-        return {
-            "success" : result.records.length == 0 ? true : false,
-            "message" : result.records.length == 0 ? "Prenotazione Delated" : "Prenotazione not found"
-        }
+        return result
     }
     
     // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
