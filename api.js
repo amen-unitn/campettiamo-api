@@ -337,7 +337,6 @@ app.delete('/api/v2/utente/elimina-prenotazione/', (req, res) => {
 })
 
 app.get('/api/v2/paypal/client', (req, res) => {
-	console.log(req);
 	paypal.getClientToken(req.query.id, (token) => {
 		res.json({ success: true, token: token })
 	})
