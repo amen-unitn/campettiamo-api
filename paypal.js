@@ -7,8 +7,8 @@ const gateway = new braintree.BraintreeGateway({
 	merchantId: '8w6h3phynd264tqs'
 });
 
-function searchPayPalUserInVault(email, callback) {
-	const stream = gateway.customer.search((search) => {
+async function searchPayPalUserInVault(email, callback) {
+	await gateway.customer.search((search) => {
 		search.email().is(email);
 	}, function (err, response) {
         if(!err){
@@ -20,7 +20,7 @@ function searchPayPalUserInVault(email, callback) {
 
 async function addPayPalUserInVault(nome, cognome, email, telefono, callback, errCallback) {
 	try{
-		let result = await gateway.customer.create({
+		await gateway.customer.create({
 			firstName: nome,
 			lastName: cognome,
 			email: email,
@@ -33,4 +33,28 @@ async function addPayPalUserInVault(nome, cognome, email, telefono, callback, er
 	}
 }
 
-module.exports = {searchPayPalUserInVault, addPayPalUserInVault};
+async function getClientToken(id, callback) {
+	await gateway.clientToken.generate({
+		customerId: id
+	}, (err, response) => {
+		if(!err){
+			callback(response.clientToken);
+		}
+	});
+}
+
+async function pay(amount, nonce, callback) {
+	await gateway.transaction.sale({
+		amount: amount,
+		paymentMethodNonce: nonce,
+		options: {
+			submitForSettlement: true
+		}
+	}, (err, response) => {
+		if(!err){
+			callback(response);
+		}
+	});
+}
+
+module.exports = {searchPayPalUserInVault, addPayPalUserInVault, getClientToken, pay};
