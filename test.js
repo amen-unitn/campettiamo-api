@@ -9,6 +9,7 @@ let tokenUtente = "";
 let tokenGestore = "";
 let campoId = "";
 let prenData, prenStart, prenEnd;
+let slotData, slotStart, slotEnd;
 let timeOffset = new Date().getTimezoneOffset()*60*1000;
 
 jest.setTimeout(20000);
@@ -535,7 +536,9 @@ describe('Crea nuovo slot nel campo x per (oggi + 2 giorni)', function() {
     let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
     let startTime = new Date(Date.now()-timeOffset + 86400*1000 -4*60*60*1000).toISOString().split('T')[1].slice(0,5)
     let endTime = new Date(Date.now()-timeOffset + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,5)
-    
+    slotData = today
+    slotStart = startTime
+    slotEnd = endTime
     it('responds with json', function(done) {
       request(app)
         .post('/api/v2/campo/'+campoId +'/slot')
@@ -782,7 +785,7 @@ describe('Crea prenotazione con PARAMETRI ERRATI', function() {
 })
 
 
-describe('Ottieni lista delle prenotazioni utente, User= Utente', function(){
+describe('Ottieni lista delle prenotazioni utente, Account=Utente', function(){
  it('responds with prenotazioni utente list in json format', function(done){
   request(app)
    .get('/api/v2/utente/mie-prenotazioni')
@@ -799,7 +802,7 @@ describe('Ottieni lista delle prenotazioni utente, User= Utente', function(){
  })
 })
 
-describe('Ottieni lista delle prenotazioni utente, User= Gestore', function(){
+describe('Ottieni lista delle prenotazioni utente, Account=Gestore', function(){
  it('responds with prenotazioni utente list in json format', function(done){
   request(app)
    .get('/api/v2/utente/mie-prenotazioni')
@@ -816,7 +819,7 @@ describe('Ottieni lista delle prenotazioni utente, User= Gestore', function(){
 })
 
 
-describe('Ottieni lista delle prenotazioni del campo', function(){
+describe('Ottieni lista delle prenotazioni del campo, Account=Gestore', function(){
  it('responds with campos prenptazioni list in json format', function(done){
   request(app)
    .get('/api/v2/campo/'+campoId+'/prenotazioni')
@@ -834,7 +837,7 @@ describe('Ottieni lista delle prenotazioni del campo', function(){
 })
 
 
-describe('Ottieni lista delle prenotazioni del campo', function(){
+describe('Ottieni lista delle prenotazioni del campo, Account=Utente', function(){
  it('responds with campos prenotazioni list in json format', function(done){
   request(app)
    .get('/api/v2/campo/'+campoId+'/prenotazioni')
@@ -852,17 +855,14 @@ describe('Ottieni lista delle prenotazioni del campo', function(){
 })
 
 describe('Elimina slot esistente CON PRENOTAZIONI', function() {
-    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
-    let startTime = new Date(Date.now()-timeOffset + 86400*1000).toISOString().split('T')[1].slice(0,5)
-    let endTime = new Date(Date.now()-timeOffset + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,5)
     it('responds with json', function(done) {
       request(app)
         .delete('/api/v2/campo/'+campoId+'/slot')
         .set('x-access-token', tokenGestore)
         .send({
-          "data": today,
-          "oraInizio": startTime,
-          "oraFine": endTime,
+          "data": slotData,
+          "oraInizio": slotStart,
+          "oraFine": slotEnd,
         })
         .expect(200)
         .expect(function(res) {
@@ -901,17 +901,14 @@ describe('Elimina prenotazione esistente', function() {
 
 
 describe('Elimina slot esistente SENZA PRENOTAZIONI', function() {
-    let today = new Date(Date.now()-timeOffset + 2*86400*1000).toISOString().split('T')[0]
-    let startTime = new Date(Date.now()-timeOffset + 86400*1000).toISOString().split('T')[1].slice(0,5)
-    let endTime = new Date(Date.now()-timeOffset + 86400*1000 + 4*60*60*1000).toISOString().split('T')[1].slice(0,5)
     it('responds with json', function(done) {
       request(app)
         .delete('/api/v2/campo/'+campoId+'/slot')
         .set('x-access-token', tokenGestore)
         .send({
-          "data": today,
-          "oraInizio": startTime,
-          "oraFine": endTime,
+          "data": slotData,
+          "oraInizio": slotStart,
+          "oraFine": slotEnd,
         })
         .expect(200)
         .expect(function(res) {
@@ -1030,10 +1027,10 @@ describe('CREATE Utente (con mail già usata da altro utente)', function() {
       request(app)
         .post('/api/v2/utente')
         .send({
-          "email": 'prova@me.it',
+          "email": 'prova2@me.it',
           "nome": 'utente',
           "cognome": 'prova',
-          'paypal': 'prova@me.it',
+          'paypal': 'prova2@me.it',
           'telefono': '1234567890',
           'password':'s539#fnak043@q'
         })
@@ -1082,6 +1079,7 @@ describe('DELETE Utente', function(){
 			.send()
 			.expect(200)
 			.expect(function(res){
+				//console.log(res.body)
 				assert.deepStrictEqual(res.body.success, true)
 			})
 			.end(function(err, res){

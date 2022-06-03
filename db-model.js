@@ -425,10 +425,11 @@ class DBModel {
             prenotazioni = await session.run('MATCH ()-[p:PRENOTA]->(c:Campo {id: $idCampo}) ' +
                 'WHERE p.data = date($data) AND (p.oraInizio >= time($oraInizio) OR p.oraFine <= time($oraFine))' +
                 'RETURN p', { "idCampo": idCampo, "data": data, "oraInizio": oraInizio, "oraFine": oraFine })
-            console.log(prenotazioni)
+            //console.log(prenotazioni.records)
             if (prenotazioni.records.length == 0) {
                 result = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot {data: date($data), oraInizio: time($oraInizio), oraFine: time($oraFine)}) ' +
                     'DETACH DELETE s', { "idCampo": idCampo, "data": data, "oraInizio": oraInizio, "oraFine": oraFine })
+                //console.log(result.summary.counters._stats.nodesDeleted)
             }
         } catch (error) {
             console.log(error)
@@ -436,10 +437,14 @@ class DBModel {
             await session.close()
         }
         // check if result has updates
-        return {
-            "success": prenotazioni.records.length == 0 ? true : false,
-            "message": prenotazioni.records.length == 0 ? "Slot deleted" : "Slot not deleted because there are prenotazioni"
+        let success = prenotazioni.records.length == 0 && result.summary.counters._stats.nodesDeleted > 0
+        let obj = {
+            "success": success,
+            "message": success ? "Slot deleted" : "Slot not deleted because there are prenotazioni"
         }
+        if(obj.success == false)
+        	obj.errno = 2;
+        return obj
     }
 
     async newPrenotazione(idUtente, idCampo, data, oraInizio, oraFine) {
