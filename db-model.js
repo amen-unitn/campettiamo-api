@@ -22,9 +22,9 @@ class DBModel {
         else return { lat: -1, lng: -1 }
         //returns an object {lat:value, lng:value}
     }
-    
+
     /*async getAccount(email){
-    	const session = driver.session()
+        const session = driver.session()
         let result = null
         try {
             let dbResult = await session.run('MATCH (a:Account {email:$email}) RETURN a, labels(a)', {"email":email})
@@ -48,13 +48,13 @@ class DBModel {
         let result = null
         try {
             let dbResult = await session.run('MATCH (a:Account {email:$email}) RETURN a, labels(a)', { "email": email })
-            if (dbResult.records && dbResult.records[0]){
-            	result = dbResult.records[0].get("a").properties;
-		let labels = dbResult.records[0].get("a").labels;
-		let index = labels.indexOf("Account");
-		delete labels[index];
-		result.tipologia = labels[0];
-            } 
+            if (dbResult.records && dbResult.records[0]) {
+                result = dbResult.records[0].get("a").properties;
+                let labels = dbResult.records[0].get("a").labels;
+                let index = labels.indexOf("Account");
+                delete labels[index];
+                result.tipologia = labels[0];
+            }
         } catch (error) {
             console.log(error)
         } finally {
@@ -62,12 +62,12 @@ class DBModel {
         }
         return result
     }
-    
+
     async updatePassword(email, password) {
-    	const session = driver.session()
+        const session = driver.session()
         let result = false;
         try {
-            let dbResult = await session.run('MATCH (a:Account {email:$email}) SET a.password = $pwd', { "email": email, "pwd":password });
+            let dbResult = await session.run('MATCH (a:Account {email:$email}) SET a.password = $pwd', { "email": email, "pwd": password });
             result = dbResult.summary.counters._containsUpdates;
         } catch (error) {
             console.log(error);
@@ -76,7 +76,7 @@ class DBModel {
         }
         return result;
     }
-    
+
     //returns only account, without tipologia
     async getAccountById(id) {
         const session = driver.session()
@@ -92,78 +92,78 @@ class DBModel {
         }
         return result
     }
-    
+
 
     async createAccount(nome, cognome, email, paypal, telefono, pw, tipologia) {
-    	//controllo che l'email non sia già usata
-    	let stessaMail = await this.getAccountByEmail(email);
-    	//console.log(stessaMail)
-	if(stessaMail === null){
-		let result
-		const session = driver.session()
-		try {
-		    result = await session.run(
-		        'CREATE (a:Account: ' + tipologia + ' {id:apoc.create.uuid(), nome:$nome,  ' +
-		        'cognome:$cognome, email:$email, account_paypal:$account_paypal,  ' +
-		        'telefono: $telefono, password:$pw}) RETURN a.id', {
-		        "nome": nome,
-		        "cognome": cognome,
-		        "email": email,
-		        "account_paypal": paypal,
-		        "telefono": telefono,
-		        "pw": pw
-		    })
+        //controllo che l'email non sia già usata
+        let stessaMail = await this.getAccountByEmail(email);
+        //console.log(stessaMail)
+        if (stessaMail === null) {
+            let result
+            const session = driver.session()
+            try {
+                result = await session.run(
+                    'CREATE (a:Account: ' + tipologia + ' {id:apoc.create.uuid(), nome:$nome,  ' +
+                    'cognome:$cognome, email:$email, account_paypal:$account_paypal,  ' +
+                    'telefono: $telefono, password:$pw}) RETURN a.id', {
+                    "nome": nome,
+                    "cognome": cognome,
+                    "email": email,
+                    "account_paypal": paypal,
+                    "telefono": telefono,
+                    "pw": pw
+                })
 
-		} catch (error) {
-		    console.log(error)
-		} finally {
-		    await session.close()
-		}
-		return result.records[0].get('a.id')
-	}	
-	return null;
+            } catch (error) {
+                console.log(error)
+            } finally {
+                await session.close()
+            }
+            return result.records[0].get('a.id')
+        }
+        return null;
     }
-    
-    async editAccount(id, nome, cognome, email, paypal, telefono, pw){
-    	let result = false
-    	//console.log("id = " + id)
-    	let stessaMail = await this.getAccountByEmail(email);
-    	//console.log(stessaMail)
-    	if(stessaMail === null || stessaMail.id == id){
-    		//se l'email viene cambiata, deve essere non già usata (oppure l'email non viene cambiata, quindi resta la stessa dell'utente)
-    		const session = driver.session()
-		try {
-		    let dbResult = await session.run(
-		        'MATCH (a:Account {id: $id}) SET a.nome = $nome,  ' +
-		        'a.cognome = $cognome, a.email = $email, a.account_paypal = $account_paypal,  ' +
-		        'a.telefono = $telefono, a.password = $pw', {
-		        "id":id,
-		        "nome": nome,
-		        "cognome": cognome,
-		        "email": email,
-		        "account_paypal": paypal,
-		        "telefono": telefono,
-		        "pw": pw
-		    });
-		    result = dbResult.summary.counters._containsUpdates
 
-		} catch (error) {
-		    console.log(error)
-		} finally {
-		    await session.close()
-		}
-    	}
+    async editAccount(id, nome, cognome, email, paypal, telefono, pw) {
+        let result = false
+        //console.log("id = " + id)
+        let stessaMail = await this.getAccountByEmail(email);
+        //console.log(stessaMail)
+        if (stessaMail === null || stessaMail.id == id) {
+            //se l'email viene cambiata, deve essere non già usata (oppure l'email non viene cambiata, quindi resta la stessa dell'utente)
+            const session = driver.session()
+            try {
+                let dbResult = await session.run(
+                    'MATCH (a:Account {id: $id}) SET a.nome = $nome,  ' +
+                    'a.cognome = $cognome, a.email = $email, a.account_paypal = $account_paypal,  ' +
+                    'a.telefono = $telefono, a.password = $pw', {
+                    "id": id,
+                    "nome": nome,
+                    "cognome": cognome,
+                    "email": email,
+                    "account_paypal": paypal,
+                    "telefono": telefono,
+                    "pw": pw
+                });
+                result = dbResult.summary.counters._containsUpdates
+
+            } catch (error) {
+                console.log(error)
+            } finally {
+                await session.close()
+            }
+        }
         return result
     }
-    
-    async deleteAccount(id, nome, cognome, email, paypal, telefono, pw){
-    	let result = false
+
+    async deleteAccount(id, nome, cognome, email, paypal, telefono, pw) {
+        let result = false
         const session = driver.session()
         const tx = session.beginTransaction()
         try {
-            let tx1 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo)-[sr:HAS_SLOT]->(s:Slot) DETACH DELETE s", {"id":id});
-            let tx2 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo) DETACH DELETE c", {"id":id});
-            let tx3 = await tx.run("MATCH (a:Account {id:$id}) DETACH DELETE a", {"id":id});
+            let tx1 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo)-[sr:HAS_SLOT]->(s:Slot) DETACH DELETE s", { "id": id });
+            let tx2 = await tx.run("MATCH (a:Account {id:$id})-[r:AFFITTA]->(c:Campo) DETACH DELETE c", { "id": id });
+            let tx3 = await tx.run("MATCH (a:Account {id:$id}) DETACH DELETE a", { "id": id });
             await tx.commit();
             result = tx3.summary.counters._containsUpdates
         } catch (error) {
@@ -348,7 +348,7 @@ class DBModel {
         let slot_datetime = new Date(year, month - 1, day, hour, minute)
         let diff = (slot_datetime - current_datetime) / 3600000
 
-        if (year==slot_datetime.getFullYear() && month==slot_datetime.getMonth()+1 && day==slot_datetime.getDate() && diff>0) {
+        if (year == slot_datetime.getFullYear() && month == slot_datetime.getMonth() + 1 && day == slot_datetime.getDate() && diff > 0) {
             const session = driver.session()
             let result = false
             try {
@@ -442,8 +442,8 @@ class DBModel {
             "success": success,
             "message": success ? "Slot deleted" : "Slot not deleted because there are prenotazioni"
         }
-        if(obj.success == false)
-        	obj.errno = 2;
+        if (obj.success == false)
+            obj.errno = 2;
         return obj
     }
 
@@ -453,10 +453,10 @@ class DBModel {
         try {
             let availableSlots = await this.getAvailableSlots(idCampo, data)
             if (availableSlots.length > 0) {
-            	console.log(availableSlots)
+                console.log(availableSlots)
                 // find which slot is suitable for given time
                 let slot = availableSlots.find(slot => {
-                    return slot.oraInizio <= oraInizio+':00Z' && oraFine <= slot.oraFine+':00Z'
+                    return slot.oraInizio <= oraInizio + ':00Z' && oraFine <= slot.oraFine + ':00Z'
                 })
                 console.log(slot)
 
@@ -484,142 +484,145 @@ class DBModel {
     async checkMonthAvailability(idCampo, month, year) {
         const session = driver.session()
         let giorniLiberi = []
-        try {
-            let giorni = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
-                'WHERE s.data.year = toInteger($year) AND s.data.month = toInteger($month) ' + // return array of days
-                'RETURN DISTINCT s.data.day AS days',
-                {
-                    "idCampo": idCampo,
-                    "month": month,
-                    "year": year
-                })
-            giorniLiberi = giorni.records.map(record => record.get("days").toNumber())
+        let today = new Date()
+        if (today.getFullYear() <= year && today.getMonth() + 1 <= month) {
+            try {
+                let giorni = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
+                    'WHERE s.data.year = toInteger($year) AND s.data.month = toInteger($month) ' + // return array of days
+                    'RETURN DISTINCT s.data.day AS days',
+                    {
+                        "idCampo": idCampo,
+                        "month": month,
+                        "year": year
+                    })
+                giorniLiberi = giorni.records.map(record => record.get("days").toNumber())
 
-            // check if there are slots for each day
-            for (let giorno = 0; giorno < giorniLiberi.length; giorno++) {
-                let slots = await this.getAvailableSlots(idCampo, year + "-" + month + "-" + giorniLiberi[giorno]) // get slots for each day
-                if (slots.length == 0) { //
-                    giorniLiberi.splice(giorno, 1)
-                    giorno--
+                // check if there are slots for each day
+                for (let giorno = 0; giorno < giorniLiberi.length; giorno++) {
+                    let slots = await this.getAvailableSlots(idCampo, year + "-" + month + "-" + giorniLiberi[giorno]) // get slots for each day
+                    if (slots.length == 0) { //
+                        giorniLiberi.splice(giorno, 1)
+                        giorno--
+                    }
                 }
             }
+            catch (error) {
+                console.log(error)
+            }
+            finally {
+                await session.close()
+            }
         }
-    catch(error) {
-        console.log(error)
-    }
-        finally {
-    await session.close()
-}
-return giorniLiberi
+        return giorniLiberi
     }
 
     async getAvailableSlots(idCampo, data) {
-    const session = driver.session()
-    let slots = []
-    try { // to test
+        const session = driver.session()
+        let slots = []
+        try { // to test
 
-        const prenotaEntro = await this.get_prenota_entro(idCampo)
+            const prenotaEntro = await this.get_prenota_entro(idCampo)
 
-        let slots_campo = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
-            'WHERE s.data=date($data) ' +
-            'RETURN s.oraInizio, s.oraFine ' +
-            'ORDER BY s.oraInizio ',
-            {
-                "idCampo": idCampo,
-                "data": data
+            let slots_campo = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
+                'WHERE s.data=date($data) ' +
+                'RETURN s.oraInizio, s.oraFine ' +
+                'ORDER BY s.oraInizio ',
+                {
+                    "idCampo": idCampo,
+                    "data": data
+                })
+
+            // iterate over all slots
+            slots_campo.records.forEach((record) => {
+                // get last slot oraFine
+                if (slots.length != 0 && slots[slots.length - 1].oraFine == record.get("s.oraInizio").toString()) {
+                    slots[slots.length - 1].oraFine = record.get("s.oraFine").toString()
+                } else {
+                    slots.push(new slot.Slot(data, record.get("s.oraInizio").toString(), record.get("s.oraFine").toString()))
+                }
             })
 
-        // iterate over all slots
-        slots_campo.records.forEach((record) => {
-            // get last slot oraFine
-            if (slots.length != 0 && slots[slots.length - 1].oraFine == record.get("s.oraInizio").toString()) {
-                slots[slots.length - 1].oraFine = record.get("s.oraFine").toString()
-            } else {
-                slots.push(new slot.Slot(data, record.get("s.oraInizio").toString(), record.get("s.oraFine").toString()))
-            }
-        })
+            let prenotazioni = await session.run('MATCH (u:Utente)-[p:PRENOTA]->(c:Campo {id: $idCampo}) ' +
+                'WHERE p.data=date($data) ' +
+                'RETURN p.oraInizio, p.oraFine',
+                {
+                    "idCampo": idCampo,
+                    "data": data
+                })
 
-        let prenotazioni = await session.run('MATCH (u:Utente)-[p:PRENOTA]->(c:Campo {id: $idCampo}) ' +
-            'WHERE p.data=date($data) ' +
-            'RETURN p.oraInizio, p.oraFine',
-            {
-                "idCampo": idCampo,
-                "data": data
+            prenotazioni.records.forEach((record) => {
+                // search which slot is associated to record
+                let current_slot = slots.find(s => s.oraInizio <= record.get("p.oraInizio").toString() && record.get("p.oraFine").toString() <= s.oraFine)
+                let index = slots.indexOf(current_slot) // get current_slot index in slots array
+
+                if (current_slot) {
+                    // remove slot from array
+                    slots.splice(index, 1)
+                    let aggiuntoInizio = false
+                    if (current_slot.oraInizio != record.get("p.oraInizio").toString()) {
+                        aggiuntoInizio = true
+                        // add new slot
+                        slots.splice(index, 0, new slot.Slot(data, current_slot.oraInizio, record.get("p.oraInizio").toString()))
+                    }
+                    if (current_slot.oraFine != record.get("p.oraFine").toString()) {
+                        // add new slot
+                        slots.splice(!aggiuntoInizio ? index : index + 1, 0, new slot.Slot(data, record.get("p.oraFine").toString(), current_slot.oraFine))
+                    }
+                }
             })
-
-        prenotazioni.records.forEach((record) => {
-            // search which slot is associated to record
-            let current_slot = slots.find(s => s.oraInizio <= record.get("p.oraInizio").toString() && record.get("p.oraFine").toString() <= s.oraFine)
-            let index = slots.indexOf(current_slot) // get current_slot index in slots array
-
-            if (current_slot) {
-                // remove slot from array
-                slots.splice(index, 1)
-                let aggiuntoInizio = false
-                if (current_slot.oraInizio != record.get("p.oraInizio").toString()) {
-                    aggiuntoInizio = true
-                    // add new slot
-                    slots.splice(index, 0, new slot.Slot(data, current_slot.oraInizio, record.get("p.oraInizio").toString()))
-                }
-                if (current_slot.oraFine != record.get("p.oraFine").toString()) {
-                    // add new slot
-                    slots.splice(!aggiuntoInizio ? index : index + 1, 0, new slot.Slot(data, record.get("p.oraFine").toString(), current_slot.oraFine))
-                }
-            }
-        })
-        slots = slots.filter(s => {
-            let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - (new Date().getTime())) / 3600000
-            //console.log("diff (hours) = " + diff)
-            //console.log("prenota entro = " + prenotaEntro)
-            return diff > prenotaEntro
-        })
+            slots = slots.filter(s => {
+                let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - (new Date().getTime())) / 3600000
+                //console.log("diff (hours) = " + diff)
+                //console.log("prenota entro = " + prenotaEntro)
+                return diff > prenotaEntro
+            })
+        }
+        catch (error) {
+            console.log(error)
+        }
+        finally {
+            await session.close()
+        }
+        return slots
     }
-    catch (error) {
-        console.log(error)
-    }
-    finally {
-        await session.close()
-    }
-    return slots
-}
 
     async idUtenti() {
-    const session = driver.session()
-    let result = []
-    try {
-        let dbResult = await session.run('MATCH (u:Utente) RETURN u.id AS id')
-        result = dbResult.records.map(record => record.get("id").toString())
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (u:Utente) RETURN u.id AS id')
+            result = dbResult.records.map(record => record.get("id").toString())
+        }
+        catch (error) {
+            console.log(error)
+        }
+        finally {
+            await session.close()
+        }
+        return result
     }
-    catch (error) {
-        console.log(error)
-    }
-    finally {
-        await session.close()
-    }
-    return result
-}
 
     // Get the list of all reservations of a field given the id of the field
     async getListaPrenotazioni(idCampo) {
-    const session = driver.session()
-    let result = []
-    try {
-        let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p, u', { idCampo: idCampo })
-        dbResult.records.forEach((record) => {
-            result.push({
-                "data": record.get("p").properties.data.toString(),
-                "oraInizio": record.get("p").properties.oraInizio.toString(),
-                "oraFine": record.get("p").properties.oraFine.toString(),
-                "telefono": record.get("u").properties.telefono.toString()
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (u : Utente) - [p : PRENOTA] -> (c : Campo {id : $idCampo}) RETURN p, u', { idCampo: idCampo })
+            dbResult.records.forEach((record) => {
+                result.push({
+                    "data": record.get("p").properties.data.toString(),
+                    "oraInizio": record.get("p").properties.oraInizio.toString(),
+                    "oraFine": record.get("p").properties.oraFine.toString(),
+                    "telefono": record.get("u").properties.telefono.toString()
+                })
             })
-        })
-    } catch (error) {
-        console.log(error)
-    } finally {
-        await session.close()
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
     }
-    return result
-}
 
     // Get the list of all reservations given the id of the user
     async getListaPrenotazioniUtente(idUtente) {
@@ -653,24 +656,24 @@ return giorniLiberi
         try {
             let result1 = await session.run(
                 'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nRETURN p',
-                {"idUtente" : idUtente, "data" : data, "oraInizio" : oraInizio, "oraFine" : oraFine, "idCampo" : idCampo}
+                { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
             )
-            if(result1.records.length > 0){
-            		let dataControllo = result1.records[0].get("p").properties.data;
-		    let oraInizioControllo = result1.records[0].get("p").properties.oraInizio;
-		    let d = new Date(dataControllo + "T" + oraInizioControllo);
-		    //console.log(d)
-		    let check = (d.getTime() - (Date.now())) > (86400*1000);
-		    if(check){
-		    	let result2 = await session.run(
-			    'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nDELETE p',
-			    {"idUtente" : idUtente, "data" : data, "oraInizio" : oraInizio, "oraFine" : oraFine, "idCampo" : idCampo}
-			)
-			result = result2.summary.counters._stats.relationshipsDeleted > 0
-		    }
-            
+            if (result1.records.length > 0) {
+                let dataControllo = result1.records[0].get("p").properties.data;
+                let oraInizioControllo = result1.records[0].get("p").properties.oraInizio;
+                let d = new Date(dataControllo + "T" + oraInizioControllo);
+                //console.log(d)
+                let check = (d.getTime() - (Date.now())) > (86400 * 1000);
+                if (check) {
+                    let result2 = await session.run(
+                        'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nDELETE p',
+                        { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
+                    )
+                    result = result2.summary.counters._stats.relationshipsDeleted > 0
+                }
+
             }
-            
+
         } catch (error) {
             console.log(error)
         } finally {
@@ -678,7 +681,7 @@ return giorniLiberi
         }
         return result
     }
-    
+
     // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
     //     const session = driver.session()
     //     let result = []
@@ -710,44 +713,44 @@ return giorniLiberi
 
     // Get the list of all manager's fields given the id of the manager
     async getListaCampiGestore(idGestore) {
-    const session = driver.session()
-    let result = []
-    try {
-        let dbResult = await session.run('MATCH (g : Gestore {id : $idGestore}) - [a : AFFITTA] -> (c : Campo) RETURN c', { idGestore: idGestore })
-        dbResult.records.forEach((record) => {
-            result.push({
-                "nome": record.get("c").properties.nome.toString(),
-                "citta": record.get("c").properties.citta.toString(),
-                "indirizzo": record.get("c").properties.indirizzo.toString(),
-                "id": record.get("c").properties.id.toString()
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (g : Gestore {id : $idGestore}) - [a : AFFITTA] -> (c : Campo) RETURN c', { idGestore: idGestore })
+            dbResult.records.forEach((record) => {
+                result.push({
+                    "nome": record.get("c").properties.nome.toString(),
+                    "citta": record.get("c").properties.citta.toString(),
+                    "indirizzo": record.get("c").properties.indirizzo.toString(),
+                    "id": record.get("c").properties.id.toString()
+                })
             })
-        })
-    } catch (error) {
-        console.log(error)
-    } finally {
-        await session.close()
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
     }
-    return result
-}
 
     async get_prenota_entro(idCampo) {
-    const session = driver.session()
-    let result = []
-    try {
-        let dbResult = await session.run('MATCH (c : Campo {id : $idCampo}) RETURN c.prenotaEntro', { idCampo: idCampo })
-        result = dbResult.records.map(record => record.get("c.prenotaEntro").toString())
-    } catch (error) {
-        console.log(error)
-    } finally {
-        await session.close()
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (c : Campo {id : $idCampo}) RETURN c.prenotaEntro', { idCampo: idCampo })
+            result = dbResult.records.map(record => record.get("c.prenotaEntro").toString())
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
     }
-    return result
-}
 
     async onexit() {
-    // on application exit:
-    await driver.close()
-}
+        // on application exit:
+        await driver.close()
+    }
 
 }
 

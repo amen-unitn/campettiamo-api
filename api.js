@@ -349,9 +349,11 @@ app.get('/api/v2/campo/:idCampo/slot/giorno/:data', function (req, res) {
 app.get('/api/v2/campo/:idCampo/slot/mese/:data', function (req, res) {
 	let [anno, mese] = req.params.data.split('-')
 
-	model.checkMonthAvailability(req.params.idCampo, mese, anno).then((result) => {
-		res.json({ success: true, data: result })
-	})
+	if (anno != undefined && mese != undefined)
+		model.checkMonthAvailability(req.params.idCampo, mese, anno).then((result) => {
+			res.json({ success: true, data: result })
+		})
+	else res.json({ success: false, errno: 2 })
 });
 
 // router crea slot nel campo
