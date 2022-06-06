@@ -45,12 +45,12 @@ async function getClientToken(id, callback) {
 	});
 }
 
-async function pay(idCampo, data, oraInizio, oraFine, nonce, callback) {
+async function pay(idUtente, idCampo, data, oraInizio, oraFine, nonce, callback) {
 
-	let amount = await model.getCostoPrenotazione(idCampo, data, oraInizio, oraFine);
+	let amount = await model.getCostoPrenotazione(idUtente, idCampo, data, oraInizio, oraFine);
 	console.log(amount);
 	if(amount == 0)
-		res.json({success:false, errno:2, message:"Invalid prenotazione"})
+		callback({success:false, errno:2, message:"Invalid prenotazione"})
 	else{
 		await gateway.transaction.sale({
 			amount: amount.toString(), //paypal expects amount as a string
@@ -66,4 +66,14 @@ async function pay(idCampo, data, oraInizio, oraFine, nonce, callback) {
 	}
 }
 
-module.exports = {searchPayPalUserInVault, addPayPalUserInVault, getClientToken, pay};
+async function getAmount(idUtente, idCampo, data, oraInizio, oraFine, callback) {
+
+	let amount = await model.getCostoPrenotazione(idUtente, idCampo, data, oraInizio, oraFine);
+	if(amount == 0)
+		callback({success:false, errno:2, message:"Invalid prenotazione"})
+	else
+		callback({success:true, amount:amount})
+	
+}
+
+module.exports = {searchPayPalUserInVault, addPayPalUserInVault, getClientToken, pay, getAmount};

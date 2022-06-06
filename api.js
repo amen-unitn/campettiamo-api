@@ -451,11 +451,20 @@ app.get('/api/v2/paypal/client', (req, res) => {
 
 app.post('/api/v2/paypal/paga', (req, res) => {
 	if(checkPagaProperties(req.body)){
-		paypal.pay(req.body.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine, req.body.nonce, (result) => {
+		paypal.pay(req.loggedUser.id, req.body.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine, req.body.nonce, (result) => {
 			if(result.success)
 				res.json({ success: true, message:"Payment completed" })
 			else
 				res.json({success:false, errno:4, message:"Cannot complete payment"})
+		})
+	}else
+		res.json({success:false, errno:2, message:"Missing values. idCampo, data, oraInizio, oraFine and nonce are required"})
+})
+
+app.get('/api/v2/paypal/amount', (req, res) => {
+	if(checkAmountProperties(req.query)){
+		paypal.getAmount(req.loggedUser.id, req.query.idCampo, req.query.data, req.query.oraInizio, req.query.oraFine, (result) => {
+			res.json(result)
 		})
 	}else
 		res.json({success:false, errno:2, message:"Missing values. idCampo, data, oraInizio, oraFine and nonce are required"})
@@ -467,6 +476,13 @@ function checkPagaProperties(reqBody){
 		reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
 		reqBody.oraFine != undefined && reqBody.oraFine != null &&
 		reqBody.nonce != undefined && reqBody.nonce != null;
+}
+
+function checkAmountProperties(reqQuery){
+	return reqQuery.idCampo != undefined && reqQuery.idCampo != null &&
+		reqQuery.data != undefined && reqQuery.data != null && !isNaN(new Date(reqQuery.data).getTime()) &&
+		reqQuery.oraInizio != undefined && reqQuery.oraInizio != null &&
+		reqQuery.oraFine != undefined && reqQuery.oraFine != null;
 }
 
 //The 404 Route (ALWAYS Keep this as the last route)

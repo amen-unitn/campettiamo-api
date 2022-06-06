@@ -658,10 +658,11 @@ class DBModel {
                 'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nRETURN c',
                 { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
             )
+            console.log(result1.records[0].get("c"))
             if (result1.records.length > 0) {
-                let tariffa = parseFloat(result1.records[0].get("c").tariffaOraria);
-                console.log(tariffa);
-                let ore = (moment(oraInizio, "hh:mm:ss") - moment(oraFine, "hh:mm:ss"))/(3600*1000);
+                let tariffa = parseFloat(result1.records[0].get("c").properties.tariffa);
+                //console.log(tariffa);
+                let ore = (moment(oraFine, "hh:mm:ssZ") - moment(oraInizio, "hh:mm:ssZ"))/(3600*1000);
                 let costo = tariffa*ore;
                 result = costo;
             }
