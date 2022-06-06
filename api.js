@@ -14,7 +14,7 @@ const model = new db.Model();
 function authFilter(req, res, next) {
 	//console.log(req._parsedUrl.pathname);
 	//console.log(req.method);
-	pathRequiresAuth = ['/api/v2/campi', '/api/v2/campo', '/api/v2/campi-luogo', '/api/v2/campi-nome', '/api/v2/campi-raggio', '/api/v2/utenti'];
+	pathRequiresAuth = ['/api/v2/campi', '/api/v2/campo', '/api/v2/campi-luogo', '/api/v2/campi-nome', '/api/v2/campi-raggio', '/api/v2/utenti', '/api/v2/paypal'];
 	if ((req._parsedUrl.pathname == '/api/v2/utente' || req._parsedUrl.pathname == '/api/v2/gestore') && req.method == "POST"
 		|| req._parsedUrl.pathname == '/api/v2/login' || req._parsedUrl.pathname == '/api/v2/recupero')
 		next(); //allow account creation
