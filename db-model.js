@@ -1,14 +1,22 @@
+// --------------------------------------------------------> LOGIC <-----------------------------------------------------------------
+
+
+// ---------------------------------------------------------> SET UP <---------------------------------------------------------------
+
 slot = require('./slot');
 neo4j = require('neo4j-driver')
 axios = require('axios');
 moment = require("moment");
 //modulo per usare .env file
 require('dotenv').config()
-
 driver = neo4j.driver(process.env.uri, neo4j.auth.basic(process.env.user, process.env.password))
 
+
+// ---------------------------------------------------------> DB MODEL CLASS <-------------------------------------------------------
+// ------------------------------------------------------> CONTAINS FUNCTION LOGIC <--------------------------------------------------
 class DBModel {
 
+    // --------------------------------------------------->COORDINATE GEOGRAFICHE<----------------------------------------------------
     async getCoordinates(indirizzo, cap, citta, provincia) {
         let address = indirizzo + " " + cap + " " + citta + " " + provincia
         return await this.getCoordinatesByString(address)
@@ -42,8 +50,9 @@ class DBModel {
         }
         return result
     }*/
+    // ------------------------------------------------->ACCOUNT<----------------------------------------------------------------------
 
-    //returns account + tipologia
+    //given a mail returns account + tipologia
     async getAccountByEmail(email) {
         const session = driver.session()
         let result = null
@@ -63,7 +72,7 @@ class DBModel {
         }
         return result
     }
-
+    // given email and password change old password whith new one
     async updatePassword(email, password) {
         const session = driver.session()
         let result = false;
@@ -94,7 +103,7 @@ class DBModel {
         return result
     }
 
-
+    //create new account, fail if email alredy used
     async createAccount(nome, cognome, email, paypal, telefono, pw, tipologia) {
         //controllo che l'email non sia già usata
         let stessaMail = await this.getAccountByEmail(email);
@@ -124,7 +133,7 @@ class DBModel {
         }
         return null;
     }
-
+    // given account's info change the old one, fails if email alredy in use
     async editAccount(id, nome, cognome, email, paypal, telefono, pw) {
         let result = false
         //console.log("id = " + id)
@@ -156,7 +165,7 @@ class DBModel {
         }
         return result
     }
-
+    // given all account info it deletes it 
     async deleteAccount(id, nome, cognome, email, paypal, telefono, pw) {
         let result = false
         const session = driver.session()
@@ -175,15 +184,34 @@ class DBModel {
         }
         return result
     }
-
+    // create an account of type Utente
     async createUtente(nome, cognome, email, paypal, telefono, pw) {
         return this.createAccount(nome, cognome, email, paypal, telefono, pw, "Utente")
     }
-
+    // create an account of type Gestore
     async createGestore(nome, cognome, email, paypal, telefono, pw) {
         return this.createAccount(nome, cognome, email, paypal, telefono, pw, "Gestore")
     }
+    // return user list
+    async idUtenti() {
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (u:Utente) RETURN u.id AS id')
+            result = dbResult.records.map(record => record.get("id").toString())
+        }
+        catch (error) {
+            console.log(error)
+        }
+        finally {
+            await session.close()
+        }
+        return result
+    }
 
+     // ------------------------------------------------->CAMPI<--------------------------------------------------
+
+    // given account info it creates it, coordinates are calculated based on the adress 
     async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
         const tx = session.beginTransaction()
@@ -221,7 +249,7 @@ class DBModel {
         else
             return null
     }
-
+    // return all the campi 
     async getListaCampi() {
         const session = driver.session()
         let result = []
@@ -238,7 +266,7 @@ class DBModel {
         }
         return result
     }
-
+    // given a campo id return campo info
     async getCampo(id) {
         const session = driver.session()
         let result = null
@@ -256,6 +284,7 @@ class DBModel {
         return result
     }
 
+    // given campo's info update the old ones
     async editCampo(id, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
         let result = false
@@ -285,6 +314,7 @@ class DBModel {
         return result
     }
 
+    // given a campo id deletes it
     async deleteCampo(id) {
         const session = driver.session()
         let result = []
@@ -300,8 +330,7 @@ class DBModel {
         return result.summary.counters._stats.nodesDeleted > 0
     }
 
-
-
+    //given a campo name return it's informations
     async getCampiPerNome(nome) {
         const session = driver.session()
         let result = []
@@ -320,7 +349,7 @@ class DBModel {
     }
 
 
-
+    // given lat, lng, radius return all the campi in the radius
     // la matematica è presa da qui https://www.geeksforgeeks.org/program-distance-two-points-earth/
     // in particolare usiamo questa formula Distance  = 6372,795477598(raggio terrestre in km) * arccos[(sin(lat1) * sin(lat2)) + cos(lat1) * cos(lat2) * cos(long2 – long1)]
     // il raggio è da passare alla funzione in km , le coordinate in formato  ( +/-)  xxx.yyyyyyy
@@ -341,7 +370,45 @@ class DBModel {
         }
         return result
     }
+    
+    // check if campo info are complete
+    async checkCampoProperties(reqBody) {
+            return reqBody.nome != undefined && reqBody.nome != null &&
+                reqBody.indirizzo != undefined && reqBody.indirizzo != null &&
+                reqBody.cap != undefined && reqBody.cap != null && !isNaN(reqBody.cap) &&
+                reqBody.citta != undefined && reqBody.citta != null &&
+                reqBody.provincia != undefined && reqBody.provincia != null &&
+                reqBody.sport != undefined && reqBody.sport != null &&
+                reqBody.tariffa != undefined && reqBody.tariffa != null && !isNaN(reqBody.tariffa) &&
+                reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null && !isNaN(reqBody.prenotaEntro)
+    }
 
+
+     // Get the list of all manager's fields given the id of the manager
+     async getListaCampiGestore(idGestore) {
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (g : Gestore {id : $idGestore}) - [a : AFFITTA] -> (c : Campo) RETURN c', { idGestore: idGestore })
+            dbResult.records.forEach((record) => {
+                result.push({
+                    "nome": record.get("c").properties.nome.toString(),
+                    "citta": record.get("c").properties.citta.toString(),
+                    "indirizzo": record.get("c").properties.indirizzo.toString(),
+                    "id": record.get("c").properties.id.toString()
+                })
+            })
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+    
+    // ------------------------------------------------->SLOT<--------------------------------------------------------------------------
+
+    // given slot info create a new slot, fail if slot overlap whit a preexistent one  
     async createSlot(idCampo, data, oraInizio, oraFine) {
         let [year, month, day] = data.split("-").map(Number)    // split date by "-" and convert to number
         let [hour, minute] = oraInizio.split(":").map(Number)   // split time by ":" and convert to number
@@ -392,6 +459,7 @@ class DBModel {
         }
     }
 
+    // give a campo's id return it's info
     async getSlots(idCampo) {
         const session = driver.session()
         let result = []
@@ -417,6 +485,7 @@ class DBModel {
         return result
     }
 
+    // given a slot info deletes the slot 
     async deleteSlot(idCampo, data, oraInizio, oraFine) {
         const session = driver.session()
         let result = null
@@ -448,6 +517,16 @@ class DBModel {
         return obj
     }
 
+     // check if slot info are complete
+     async checkSlotProperties(reqBody) {
+        return reqBody.data != undefined && reqBody.data != null &&
+            reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
+            reqBody.oraFine != undefined && reqBody.oraFine != null
+    }
+   
+    // ------------------------------------------------->PRENOTAZIONI<--------------------------------------------------------------------------
+
+    //creates a new prenotazione
     async newPrenotazione(idUtente, idCampo, data, oraInizio, oraFine) {
         const session = driver.session()
         let result = null
@@ -481,7 +560,7 @@ class DBModel {
         }
         return result
     }
-
+    // given an idcampo, month and year cheks if there are prenotations for the campo on the given month and return the days
     async checkMonthAvailability(idCampo, month, year) {
         const session = driver.session()
         let giorniLiberi = []
@@ -516,7 +595,7 @@ class DBModel {
         }
         return giorniLiberi
     }
-
+    // given an idcampo and a data cheks if there are prenotations for the campo on the given day 
     async getAvailableSlots(idCampo, data) {
         const session = driver.session()
         let slots = []
@@ -587,22 +666,14 @@ class DBModel {
         return slots
     }
 
-    async idUtenti() {
-        const session = driver.session()
-        let result = []
-        try {
-            let dbResult = await session.run('MATCH (u:Utente) RETURN u.id AS id')
-            result = dbResult.records.map(record => record.get("id").toString())
-        }
-        catch (error) {
-            console.log(error)
-        }
-        finally {
-            await session.close()
-        }
-        return result
+    // check if prenotazione info are complete
+    async checkPrenotazioneProperties(reqBody) {
+        return reqBody.data != undefined && reqBody.data != null && !isNaN(new Date(reqBody.data).getTime()) &&
+            reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
+            reqBody.oraFine != undefined && reqBody.oraFine != null
     }
 
+  
     // Get the list of all reservations of a field given the id of the field
     async getListaPrenotazioni(idCampo) {
         const session = driver.session()
@@ -710,6 +781,22 @@ class DBModel {
         }
         return result
     }
+    // given a campo id return it's prenotaEntro property 
+    async get_prenota_entro(idCampo) {
+        const session = driver.session()
+        let result = []
+        try {
+            let dbResult = await session.run('MATCH (c : Campo {id : $idCampo}) RETURN c.prenotaEntro', { idCampo: idCampo })
+            result = dbResult.records.map(record => record.get("c.prenotaEntro").toString())
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+
+
 
     // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
     //     const session = driver.session()
@@ -740,41 +827,11 @@ class DBModel {
     //     return result
     // }
 
-    // Get the list of all manager's fields given the id of the manager
-    async getListaCampiGestore(idGestore) {
-        const session = driver.session()
-        let result = []
-        try {
-            let dbResult = await session.run('MATCH (g : Gestore {id : $idGestore}) - [a : AFFITTA] -> (c : Campo) RETURN c', { idGestore: idGestore })
-            dbResult.records.forEach((record) => {
-                result.push({
-                    "nome": record.get("c").properties.nome.toString(),
-                    "citta": record.get("c").properties.citta.toString(),
-                    "indirizzo": record.get("c").properties.indirizzo.toString(),
-                    "id": record.get("c").properties.id.toString()
-                })
-            })
-        } catch (error) {
-            console.log(error)
-        } finally {
-            await session.close()
-        }
-        return result
-    }
 
-    async get_prenota_entro(idCampo) {
-        const session = driver.session()
-        let result = []
-        try {
-            let dbResult = await session.run('MATCH (c : Campo {id : $idCampo}) RETURN c.prenotaEntro', { idCampo: idCampo })
-            result = dbResult.records.map(record => record.get("c.prenotaEntro").toString())
-        } catch (error) {
-            console.log(error)
-        } finally {
-            await session.close()
-        }
-        return result
-    }
+
+   
+
+    
 
     async onexit() {
         // on application exit:
