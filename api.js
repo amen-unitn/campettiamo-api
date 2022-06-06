@@ -406,7 +406,7 @@ app.delete('/api/v2/campo/:id/prenota', (req, res) => {
 			if (result)
 				res.json({ success: true, message: "Prenotazione deleted" })
 			else
-				res.json({ success: false, message: "Error on delete prenotazione - it is not possible to delete a prenotazione less than 24 hours before" })
+				res.json({ success: false, message: "Error on delete prenotazione - it is not possible to delete a prenotazione less than 24 hours before", errno:2 })
 		}).catch(err => {
 			console.log(err)
 			res.json({ success: false, message: "Error", errno: 4 })
