@@ -198,12 +198,6 @@ app.post('/api/v2/campo/:idCampo/prenota', function (req, res) {
 	}
 });
 
-app.get('/api/v2/utenti', function (req, res) {
-	model.idUtenti().then((utenti) => {
-		res.json({ success: true, data: utenti })
-	})
-});
-
 function checkSlotProperties(reqBody) {
 	return reqBody.data != undefined && reqBody.data != null &&
 		reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
