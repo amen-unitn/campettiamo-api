@@ -209,7 +209,7 @@ class DBModel {
         return result
     }
 
-     // ------------------------------------------------->CAMPI<--------------------------------------------------
+    // ------------------------------------------------->CAMPI<--------------------------------------------------
 
     // given account info create campo; coordinates are calculated based on the adress 
     async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
@@ -372,8 +372,8 @@ class DBModel {
     }
 
 
-     // Get the list of all manager's fields given the id of the manager
-     async getListaCampiGestore(idGestore) {
+    // Get the list of all manager's fields given the id of the manager
+    async getListaCampiGestore(idGestore) {
         const session = driver.session()
         let result = []
         try {
@@ -393,7 +393,7 @@ class DBModel {
         }
         return result
     }
-    
+
     // ------------------------------------------------->SLOT<--------------------------------------------------------------------------
 
     // given slot info create a new slot, fail if slot overlaps with a preexisting one  
@@ -404,7 +404,9 @@ class DBModel {
         let slot_datetime = new Date(year, month - 1, day, hour, minute)
         let diff = (slot_datetime - current_datetime) / 3600000
 
-        if (year == slot_datetime.getFullYear() && month == slot_datetime.getMonth() + 1 && day == slot_datetime.getDate() && diff > 0) {
+        let validSlot = ((moment(oraFine, "hh:mm:ssZ") - moment(oraInizio, "hh:mm:ssZ")) / (3600 * 1000)) > 0
+
+        if (validSlot && year == slot_datetime.getFullYear() && month == slot_datetime.getMonth() + 1 && day == slot_datetime.getDate() && diff > 0) {
             const session = driver.session()
             let result = false
             try {
@@ -420,7 +422,7 @@ class DBModel {
                 // check if new slot is not overlapping with existing slots
                 let overlapping = false
                 for (let i = 0; i < slots.length && !overlapping; i++) {
-                    if (slots[i].data == data && (oraInizio >= slots[i].oraInizio && oraInizio < slots[i].oraFine || oraFine > slots[i].oraInizio && oraFine <= slots[i].oraFine)) {
+                    if (slots[i].data == data && (oraInizio > slots[i].oraInizio && oraInizio < slots[i].oraFine || oraFine > slots[i].oraInizio && oraFine < slots[i].oraFine)) {
                         overlapping = true
                     }
                 }
@@ -505,7 +507,7 @@ class DBModel {
         return obj
     }
 
-   
+
     // ------------------------------------------------->PRENOTAZIONI<--------------------------------------------------------------------------
 
     //creates a new prenotazione
@@ -648,9 +650,9 @@ class DBModel {
         return slots
     }
 
-    
 
-  
+
+
     // Get the list of all reservations of a field given the id of the field
     async getListaPrenotazioni(idCampo) {
         const session = driver.session()
@@ -698,7 +700,7 @@ class DBModel {
         return result
     }
 
-    async getCostoPrenotazione(idCampo, data, oraInizio, oraFine){
+    async getCostoPrenotazione(idCampo, data, oraInizio, oraFine) {
         const session = driver.session()
         let result = 0
         try {
@@ -710,8 +712,8 @@ class DBModel {
             if (result1.records.length > 0) {
                 let tariffa = parseFloat(result1.records[0].get("c").properties.tariffa);
                 //console.log(tariffa);
-                let ore = (moment(oraFine, "hh:mm:ssZ") - moment(oraInizio, "hh:mm:ssZ"))/(3600*1000);
-                let costo = tariffa*ore;
+                let ore = (moment(oraFine, "hh:mm:ssZ") - moment(oraInizio, "hh:mm:ssZ")) / (3600 * 1000);
+                let costo = tariffa * ore;
                 result = costo;
             }
         } catch (error) {

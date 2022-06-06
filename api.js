@@ -360,7 +360,7 @@ app.post('/api/v2/campo/:idCampo/slot', async (req, res) => {
 			res.json({ success: false, message: "You are not authorized to do this", errno: 3 });
 		else {
 			if (checkSlotProperties(req.body)) {
-				let [anno, mese, giorno] = req.body.data.split('-')
+
 
 				data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 
