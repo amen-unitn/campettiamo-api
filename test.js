@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const createHttpTerminator = require ('http-terminator').createHttpTerminator;
 let tokenUtente = "";
 let tokenGestore = "";
-let campoId = "";
+let campoId = "", vaultId = "";
 let prenData, prenStart, prenEnd;
 let slotData, slotStart, slotEnd;
 let timeOffset = new Date().getTimezoneOffset()*60*1000;
@@ -49,6 +49,7 @@ describe('LOGIN Utente', function(){
 			.expect(200)
 			.expect(function(res){
 				assert.deepStrictEqual(res.body.success, true)
+        vaultId = res.body.vaultId;
 			})
 			.end(function(err, res){
 				if(err) return done(err)
@@ -127,6 +128,47 @@ describe('MODIFICA Utente', function() {
           return done()
         })
     })
+})
+
+
+describe('Ottieni TOKEN PAYPAL, vault id valido', function(){
+  it('responds with json', function(done) {
+    request(app)
+      .get('/api/v2/paypal/client?id=' + vaultId)
+      .set('x-access-token', tokenUtente)
+      .send()
+      .expect(200)
+      .expect(function(res) {
+        //console.log(res.body)
+        assert.deepStrictEqual(res.body.success, true)
+        assert.notDeepStrictEqual(res.body.token, "")
+        assert.notDeepStrictEqual(res.body.token, null)
+        assert.notDeepStrictEqual(res.body.token, undefined)
+        })
+      .end(function(err, res) {
+        if (err) return done(err)
+        return done()
+      })
+  })
+})
+
+describe('Ottieni TOKEN PAYPAL, vault id INVALIDO', function(){
+  it('responds with json', function(done) {
+    request(app)
+      .get('/api/v2/paypal/client?id=IlMioVaultId')
+      .set('x-access-token', tokenUtente)
+      .send()
+      .expect(200)
+      .expect(function(res) {
+        //console.log(res.body)
+        assert.deepStrictEqual(res.body.success, false)
+        assert.deepStrictEqual(res.body.errno, 2)
+        })
+      .end(function(err, res) {
+        if (err) return done(err)
+        return done()
+      })
+  })
 })
 
 describe('Cerca campo per id valido', function(){

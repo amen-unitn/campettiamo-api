@@ -1,4 +1,6 @@
 var braintree = require("braintree");
+const db = require("./db-model");
+var model = new db.Model();
 
 const gateway = new braintree.BraintreeGateway({
 	environment: braintree.Environment.Sandbox,
@@ -43,18 +45,25 @@ async function getClientToken(id, callback) {
 	});
 }
 
-async function pay(amount, nonce, callback) {
-	await gateway.transaction.sale({
-		amount: amount,
-		paymentMethodNonce: nonce,
-		options: {
-			submitForSettlement: true
-		}
-	}, (err, response) => {
-		if(!err){
-			callback(response);
-		}
-	});
+async function pay(idCampo, data, oraInizio, oraFine, nonce, callback) {
+
+	let amount = await model.getCostoPrenotazione(idCampo, data, oraInizio, oraFine);
+	console.log(amount);
+	if(amount == 0)
+		res.json({success:false, errno:2, message:"Invalid prenotazione"})
+	else{
+		await gateway.transaction.sale({
+			amount: amount.toString(), //paypal expects amount as a string
+			paymentMethodNonce: nonce,
+			options: {
+				submitForSettlement: true
+			}
+		}, (err, response) => {
+			if(!err){
+				callback(response);
+			}
+		});
+	}
 }
 
 module.exports = {searchPayPalUserInVault, addPayPalUserInVault, getClientToken, pay};

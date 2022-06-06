@@ -1,6 +1,7 @@
 slot = require('./slot');
 neo4j = require('neo4j-driver')
 axios = require('axios');
+moment = require("moment");
 //modulo per usare .env file
 require('dotenv').config()
 
@@ -641,6 +642,29 @@ class DBModel {
                     "indirizzo": record.get("c").properties.indirizzo.toString()
                 })
             })
+        } catch (error) {
+            console.log(error)
+        } finally {
+            await session.close()
+        }
+        return result
+    }
+
+    async getCostoPrenotazione(idUtente, idCampo, data, oraInizio, oraFine){
+        const session = driver.session()
+        let result = 0
+        try {
+            let result1 = await session.run(
+                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nRETURN c',
+                { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
+            )
+            if (result1.records.length > 0) {
+                let tariffa = parseFloat(result1.records[0].get("c").tariffaOraria);
+                console.log(tariffa);
+                let ore = (moment(oraInizio, "hh:mm:ss") - moment(oraFine, "hh:mm:ss"))/(3600*1000);
+                let costo = tariffa*ore;
+                result = costo;
+            }
         } catch (error) {
             console.log(error)
         } finally {

@@ -121,9 +121,9 @@ async function generateToken(req, res){
     else if (!req.body.password || account.password!=req.body.password) 
 		res.json({success:false,message:'Wrong password', errno:2})
 	else{
-		paypal.searchPayPalUserInVault(account.account_paypal, (vaultId) => {
+		paypal.searchPayPalUserInVault(account.account_paypal, async (vaultId) => {
 			if (vaultId == null) {
-				vaultId = paypal.addPayPalUserInVault(account.nome, account.cognome, account.account_paypal, account.telefono, (res) => {
+				vaultId = await paypal.addPayPalUserInVault(account.nome, account.cognome, account.account_paypal, account.telefono, (res) => {
 					vaultId = res;
 				})
 			}

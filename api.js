@@ -442,19 +442,36 @@ app.get('/api/v2/gestore/miei-campi', (req, res) => {
 
 app.get('/api/v2/paypal/client', (req, res) => {
 	paypal.getClientToken(req.query.id, (token) => {
-		res.json({ success: true, token: token })
+		if(token)
+			res.json({ success: true, token: token })
+		else 
+			res.json({success:false, errno:2, message:"Invalid vaultId"})
 	})
 })
 
 app.post('/api/v2/paypal/paga', (req, res) => {
-	paypal.pay(req.body.amount, req.body.nonce, (result) => {
-		res.json({ success: result.success })
-	})
+	if(checkPagaProperties(req.body)){
+		paypal.pay(req.body.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine, req.body.nonce, (result) => {
+			if(result.success)
+				res.json({ success: true, message:"Payment completed" })
+			else
+				res.json({success:false, errno:4, message:"Cannot complete payment"})
+		})
+	}else
+		res.json({success:false, errno:2, message:"Missing values. idCampo, data, oraInizio, oraFine and nonce are required"})
 })
+
+function checkPagaProperties(reqBody){
+	return reqBody.idCampo != undefined && reqBody.idCampo != null &&
+		reqBody.data != undefined && reqBody.data != null && !isNaN(new Date(reqBody.data).getTime()) &&
+		reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
+		reqBody.oraFine != undefined && reqBody.oraFine != null &&
+		reqBody.nonce != undefined && reqBody.nonce != null;
+}
 
 //The 404 Route (ALWAYS Keep this as the last route)
 app.get('*', function (req, res) {
-	res.status(404).json({ success: false, message: "Invalid path", errno: 5 });
+	res.status(404).json({ success: false, message: "Invalid path or method", errno: 5 });
 });
 
 process.on('exit', async function () {
