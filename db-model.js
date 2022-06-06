@@ -72,7 +72,7 @@ class DBModel {
         }
         return result
     }
-    // given email and password change old password whith new one
+    // given email and password change old password with new one
     async updatePassword(email, password) {
         const session = driver.session()
         let result = false;
@@ -103,7 +103,7 @@ class DBModel {
         return result
     }
 
-    //create new account, fail if email alredy used
+    //create new account, fail if email is already used
     async createAccount(nome, cognome, email, paypal, telefono, pw, tipologia) {
         //controllo che l'email non sia già usata
         let stessaMail = await this.getAccountByEmail(email);
@@ -133,7 +133,7 @@ class DBModel {
         }
         return null;
     }
-    // given account's info change the old one, fails if email alredy in use
+    // given account's info change the old one, fails if email is already in use
     async editAccount(id, nome, cognome, email, paypal, telefono, pw) {
         let result = false
         //console.log("id = " + id)
@@ -165,7 +165,7 @@ class DBModel {
         }
         return result
     }
-    // given all account info it deletes it 
+    // given all account info deletes it 
     async deleteAccount(id, nome, cognome, email, paypal, telefono, pw) {
         let result = false
         const session = driver.session()
@@ -211,7 +211,7 @@ class DBModel {
 
      // ------------------------------------------------->CAMPI<--------------------------------------------------
 
-    // given account info it creates it, coordinates are calculated based on the adress 
+    // given account info create campo; coordinates are calculated based on the adress 
     async createCampo(idGestore, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
         const tx = session.beginTransaction()
@@ -284,7 +284,7 @@ class DBModel {
         return result
     }
 
-    // given campo's info update the old ones
+    // given campo info update the old ones
     async editCampo(id, nome, indirizzo, cap, citta, provincia, sport, tariffa, prenotaEntro) {
         const session = driver.session()
         let result = false
@@ -330,7 +330,7 @@ class DBModel {
         return result.summary.counters._stats.nodesDeleted > 0
     }
 
-    //given a campo name return it's informations
+    //given a campo name return its informations
     async getCampiPerNome(nome) {
         const session = driver.session()
         let result = []
@@ -408,7 +408,7 @@ class DBModel {
     
     // ------------------------------------------------->SLOT<--------------------------------------------------------------------------
 
-    // given slot info create a new slot, fail if slot overlap whit a preexistent one  
+    // given slot info create a new slot, fail if slot overlaps with a preexisting one  
     async createSlot(idCampo, data, oraInizio, oraFine) {
         let [year, month, day] = data.split("-").map(Number)    // split date by "-" and convert to number
         let [hour, minute] = oraInizio.split(":").map(Number)   // split time by ":" and convert to number
@@ -459,7 +459,7 @@ class DBModel {
         }
     }
 
-    // give a campo's id return it's info
+    // give a campo's id return its info
     async getSlots(idCampo) {
         const session = driver.session()
         let result = []
@@ -796,42 +796,7 @@ class DBModel {
         return result
     }
 
-
-
-    // async getAvailableSlots(idCampo, day, month, year) { //add passing a date in format yyyy-mm-dd
-    //     const session = driver.session()
-    //     let result = []
-    //     try {
-    //         let dbResult = await session.run('MATCH (c:Campo {id: $idCampo})-[:HAS_SLOT]->(s:Slot) ' +
-    //             'WHERE s.data.year = toInteger($year) AND s.data.month = toInteger($month) AND s.data.day = toInteger($day) ' +
-    //             'RETURN s.oraInizio, s.oraFine',
-    //             {
-    //                 "idCampo": idCampo,
-    //                 "day": day,
-    //                 "month": month,
-    //                 "year": year
-    //             })
-    //         result = dbResult.records.map(record => {
-    //             return {
-    //                 oraInizio: record.get("s.oraInizio").toString(),
-    //                 oraFine: record.get("s.oraFine").toString()
-    //             }
-    //         })
-    //     }
-    //     catch (error) {
-    //         console.log(error)
-    //     }
-    //     finally {
-    //         await session.close()
-    //     }
-    //     return result
-    // }
-
-
-
-   
-
-    
+    // ------------------------------------------------->CLOSE DB CONNECTION<--------------------------------------------------------------------------
 
     async onexit() {
         // on application exit:
@@ -840,8 +805,6 @@ class DBModel {
 
 }
 
-
-
-
+// ------------------------------------------------->EXPORTING<--------------------------------------------------------------------------
 
 module.exports.Model = DBModel
