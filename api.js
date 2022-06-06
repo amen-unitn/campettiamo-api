@@ -66,6 +66,19 @@ app.delete('/api/v2/gestore', authentication.deleteAccount);
 */
 
 // -----------------------------------------------------------> CAMPI <--------------------------------------------------
+
+// check if campo info are complete
+function checkCampoProperties(reqBody) {
+	return reqBody.nome != undefined && reqBody.nome != null &&
+		reqBody.indirizzo != undefined && reqBody.indirizzo != null &&
+		reqBody.cap != undefined && reqBody.cap != null && !isNaN(reqBody.cap) &&
+		reqBody.citta != undefined && reqBody.citta != null &&
+		reqBody.provincia != undefined && reqBody.provincia != null &&
+		reqBody.sport != undefined && reqBody.sport != null &&
+		reqBody.tariffa != undefined && reqBody.tariffa != null && !isNaN(reqBody.tariffa) &&
+		reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null && !isNaN(reqBody.prenotaEntro)
+}
+
 // router ottieni la lista di tutti i campi
 app.get('/api/v2/campi', function (req, res) {
 	model.getListaCampi().then((campi) => {
@@ -124,7 +137,7 @@ app.get('/api/v2/campi-raggio', (req, res) => {
 // router crea campo
 app.post('/api/v2/campo', function (req, res) {
 	if (authentication.checkIsGestore(req, res)) {
-		if (model.checkCampoProperties(req.body)) {
+		if (checkCampoProperties(req.body)) {
 			model.createCampo(req.loggedUser.id, req.body.nome, req.body.indirizzo, req.body.cap,
 				req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
 					res.json({ "success": true, id: result })
@@ -156,7 +169,7 @@ app.put('/api/v2/campo/:id', async (req, res) => {
 			res.json({ success: false, message: "You are not authorized to do this", errno: 3 });
 		else {
 
-			if (model.checkCampoProperties(req.body)) {
+			if (checkCampoProperties(req.body)) {
 				model.editCampo(req.params.id, req.body.nome, req.body.indirizzo, req.body.cap,
 					req.body.citta, req.body.provincia, req.body.sport, req.body.tariffa, req.body.prenotaEntro).then((result) => {
 						if (result)
@@ -192,8 +205,8 @@ app.delete('/api/v2/campo/:id', async (req, res) => {
 // router crea prenotazione del campo
 app.post('/api/v2/campo/:idCampo/prenota', function (req, res) {
 	if (authentication.checkIsUtente(req, res)) {
-		if (model.checkPrenotazioneProperties(req.body)) {
-			console.log(req.body)
+		if (checkPrenotazioneProperties(req.body)) {
+			//console.log(req.body)
 			model.newPrenotazione(req.loggedUser.id, req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 				if (result)
 					res.json({ success: true, message: "Prenotazione created", id: result })
@@ -307,6 +320,13 @@ app.get('/api/v2/campo/:idCampo/prenotazioni', async (req, res) => {
 
 // ---------------------------------------------------------------> SLOTS PER CAMPO<--------------------------------------------------
 
+// check if slot info are complete
+function checkSlotProperties(reqBody) {
+	return reqBody.data != undefined && reqBody.data != null &&
+		reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
+		reqBody.oraFine != undefined && reqBody.oraFine != null
+}
+
 // router ottiene lista di slot del campo
 app.get('/api/v2/campo/:idCampo/slots', function (req, res) {
 	model.getSlots(req.params.idCampo).then((result) => {
@@ -339,7 +359,7 @@ app.post('/api/v2/campo/:idCampo/slot', async (req, res) => {
 		if (!checkOwns)
 			res.json({ success: false, message: "You are not authorized to do this", errno: 3 });
 		else {
-			if (model.checkSlotProperties(req.body)) {
+			if (checkSlotProperties(req.body)) {
 				let [anno, mese, giorno] = req.body.data.split('-')
 
 				data = model.createSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
@@ -363,7 +383,7 @@ app.delete('/api/v2/campo/:idCampo/slot', async (req, res) => { // add oraInizio
 		if (!checkOwns)
 			res.json({ success: false, message: "You are not authorized to do this", errno: 3 });
 		else {
-			if (model.checkSlotProperties(req.body)) {
+			if (checkSlotProperties(req.body)) {
 				model.deleteSlot(req.params.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
 					res.json({ success: result.success, message: result.message })
 				})
@@ -380,6 +400,12 @@ app.delete('/api/v2/campo/:idCampo/slot', async (req, res) => { // add oraInizio
 // ---------------------------------------------------------> UTENTE <--------------------------------------------------
 // --------------------------------------------------------->PRENOTAZIONI<--------------------------------------------------
 
+// check if prenotazione info are complete
+function checkPrenotazioneProperties(reqBody) {
+	return reqBody.data != undefined && reqBody.data != null && !isNaN(new Date(reqBody.data).getTime()) &&
+		reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
+		reqBody.oraFine != undefined && reqBody.oraFine != null
+}
 
 // router elimina la prenotazione effettuata dall'utente
 app.delete('/api/v2/campo/:id/prenota', (req, res) => {
@@ -433,7 +459,7 @@ app.get('/api/v2/paypal/client', (req, res) => {
 
 app.post('/api/v2/paypal/paga', (req, res) => {
 	if(checkPagaProperties(req.body)){
-		paypal.pay(req.loggedUser.id, req.body.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine, req.body.nonce, (result) => {
+		paypal.pay(req.body.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine, req.body.nonce, (result) => {
 			if(result.success)
 				res.json({ success: true, message:"Payment completed" })
 			else
@@ -445,7 +471,7 @@ app.post('/api/v2/paypal/paga', (req, res) => {
 
 app.get('/api/v2/paypal/amount', (req, res) => {
 	if(checkAmountProperties(req.query)){
-		paypal.getAmount(req.loggedUser.id, req.query.idCampo, req.query.data, req.query.oraInizio, req.query.oraFine, (result) => {
+		paypal.getAmount(req.query.idCampo, req.query.data, req.query.oraInizio, req.query.oraFine, (result) => {
 			res.json(result)
 		})
 	}else

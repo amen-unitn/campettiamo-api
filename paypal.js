@@ -47,10 +47,10 @@ async function getClientToken(id, callback) {
 	});
 }
 
-async function pay(idUtente, idCampo, data, oraInizio, oraFine, nonce, callback) {
+async function pay(idCampo, data, oraInizio, oraFine, nonce, callback) {
 
-	let amount = await model.getCostoPrenotazione(idUtente, idCampo, data, oraInizio, oraFine);
-	console.log(amount);
+	let amount = await model.getCostoPrenotazione(idCampo, data, oraInizio, oraFine);
+	//console.log(amount);
 	if(amount == 0)
 		callback({success:false, errno:2, message:"Invalid prenotazione"})
 	else{
@@ -68,9 +68,9 @@ async function pay(idUtente, idCampo, data, oraInizio, oraFine, nonce, callback)
 	}
 }
 
-async function getAmount(idUtente, idCampo, data, oraInizio, oraFine, callback) {
+async function getAmount(idCampo, data, oraInizio, oraFine, callback) {
 
-	let amount = await model.getCostoPrenotazione(idUtente, idCampo, data, oraInizio, oraFine);
+	let amount = await model.getCostoPrenotazione(idCampo, data, oraInizio, oraFine);
 	if(amount == 0)
 		callback({success:false, errno:2, message:"Invalid prenotazione"})
 	else

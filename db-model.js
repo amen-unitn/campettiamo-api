@@ -370,18 +370,6 @@ class DBModel {
         }
         return result
     }
-    
-    // check if campo info are complete
-    async checkCampoProperties(reqBody) {
-            return reqBody.nome != undefined && reqBody.nome != null &&
-                reqBody.indirizzo != undefined && reqBody.indirizzo != null &&
-                reqBody.cap != undefined && reqBody.cap != null && !isNaN(reqBody.cap) &&
-                reqBody.citta != undefined && reqBody.citta != null &&
-                reqBody.provincia != undefined && reqBody.provincia != null &&
-                reqBody.sport != undefined && reqBody.sport != null &&
-                reqBody.tariffa != undefined && reqBody.tariffa != null && !isNaN(reqBody.tariffa) &&
-                reqBody.prenotaEntro != undefined && reqBody.prenotaEntro != null && !isNaN(reqBody.prenotaEntro)
-    }
 
 
      // Get the list of all manager's fields given the id of the manager
@@ -517,12 +505,6 @@ class DBModel {
         return obj
     }
 
-     // check if slot info are complete
-     async checkSlotProperties(reqBody) {
-        return reqBody.data != undefined && reqBody.data != null &&
-            reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
-            reqBody.oraFine != undefined && reqBody.oraFine != null
-    }
    
     // ------------------------------------------------->PRENOTAZIONI<--------------------------------------------------------------------------
 
@@ -666,12 +648,7 @@ class DBModel {
         return slots
     }
 
-    // check if prenotazione info are complete
-    async checkPrenotazioneProperties(reqBody) {
-        return reqBody.data != undefined && reqBody.data != null && !isNaN(new Date(reqBody.data).getTime()) &&
-            reqBody.oraInizio != undefined && reqBody.oraInizio != null &&
-            reqBody.oraFine != undefined && reqBody.oraFine != null
-    }
+    
 
   
     // Get the list of all reservations of a field given the id of the field
@@ -721,15 +698,15 @@ class DBModel {
         return result
     }
 
-    async getCostoPrenotazione(idUtente, idCampo, data, oraInizio, oraFine){
+    async getCostoPrenotazione(idCampo, data, oraInizio, oraFine){
         const session = driver.session()
         let result = 0
         try {
             let result1 = await session.run(
-                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nRETURN c',
-                { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
+                'MATCH (c : Campo {id : $idCampo}) RETURN c',
+                { "idCampo": idCampo }
             )
-            console.log(result1.records[0].get("c"))
+            //console.log(result1.records[0].get("c"))
             if (result1.records.length > 0) {
                 let tariffa = parseFloat(result1.records[0].get("c").properties.tariffa);
                 //console.log(tariffa);
