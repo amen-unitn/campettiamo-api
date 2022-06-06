@@ -680,16 +680,20 @@ class DBModel {
         let result = false
         try {
             let result1 = await session.run(
-                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nRETURN p',
+                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo}) RETURN p',
                 { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
             )
-            if (result1.records.length > 0) {
+            let result2 = await session.run(
+                'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo}) RETURN c',
+                { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
+            )
+
+            if (result1.records.length > 0 && result2.records.length > 0) {
                 let dataControllo = result1.records[0].get("p").properties.data;
                 let oraInizioControllo = result1.records[0].get("p").properties.oraInizio;
-                let d = new Date(dataControllo + "T" + oraInizioControllo);
-                //console.log(d)
-                let check = (d.getTime() - (Date.now())) > (86400 * 1000);
-                if (check) {
+                let prenotaEntro = result2.records[0].get("c").properties.prenotaEntro
+                let diff = (new Date(dataControllo + " " + oraInizioControllo).getTime() - (new Date().getTime())) / 3600000
+                if (diff > prenotaEntro) {
                     let result2 = await session.run(
                         'MATCH (u : Utente {id : $idUtente}) - [p : PRENOTA {data : date($data), oraInizio : time($oraInizio), oraFine : time($oraFine)}] -> (c : Campo {id : $idCampo})\nDELETE p',
                         { "idUtente": idUtente, "data": data, "oraInizio": oraInizio, "oraFine": oraFine, "idCampo": idCampo }
