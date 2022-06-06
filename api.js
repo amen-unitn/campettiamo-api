@@ -400,11 +400,15 @@ app.delete('/api/v2/campo/:idCampo/slot', async (req, res) => { // add oraInizio
 // ---------------------------------------------------------> UTENTE <--------------------------------------------------
 
 // router elimina la prenotazione effettuata dall'utente
-app.delete('/api/v2/utente/elimina-prenotazione/', (req, res) => {
+app.delete('/api/v2/campo/:id/prenota', (req, res) => {
 	if (authentication.checkIsUtente(req, res)) {
-		model.deletePrenotazione(req.loggedUser.id, req.body.idCampo, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
-			res.json({ success: result.success, message: result.message })
+		model.deletePrenotazione(req.loggedUser.id, req.params.id, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
+			if (result)
+				res.json({ success: true, message: "Prenotazione deleted" })
+			else
+				res.json({ success: false, message: "Error on delete prenotazione - it is not possible to delete a prenotazione less than 24 hours before" })
 		}).catch(err => {
+			console.log(err)
 			res.json({ success: false, message: "Error", errno: 4 })
 		})
 	}
@@ -431,21 +435,6 @@ app.get('/api/v2/gestore/miei-campi', (req, res) => {
 		model.getListaCampiGestore(req.loggedUser.id).then((campi) => {
 			res.json({ success: true, data: campi })
 		}).catch(err => {
-			res.json({ success: false, message: "Error", errno: 4 })
-		})
-	}
-})
-
-// router elimina la prenotazione effettuata dall'utente
-app.delete('/api/v2/campo/:id/prenota', (req, res) => {
-	if (authentication.checkIsUtente(req, res)) {
-		model.deletePrenotazione(req.loggedUser.id, req.params.id, req.body.data, req.body.oraInizio, req.body.oraFine).then((result) => {
-			if (result)
-				res.json({ success: true, message: "Prenotazione deleted" })
-			else
-				res.json({ success: false, message: "Error on delete prenotazione - it is not possible to delete a prenotazione less than 24 hours before" })
-		}).catch(err => {
-			console.log(err)
 			res.json({ success: false, message: "Error", errno: 4 })
 		})
 	}
