@@ -1,3 +1,7 @@
+// ------------------------------------------------------> AUTHENTICATION------------------------------------------------
+
+
+// ---------------------------------------------------------> SET UP <---------------------------------------------------
 var jwt = require('jsonwebtoken');
 var db = require('./db-model');
 var crypto = require('crypto');
@@ -5,6 +9,9 @@ var sendmail = require('./email');
 var paypal = require('./paypal');
 const model = new db.Model();
 
+// ------------------------------------------------> LOING/REGISTATION/AUTHENTICATION <--------------------------------------------------
+// -------------------------------------------------------> RELATED FUNCTION <-----------------------------------------------------------
+// check if the passed info are complete then create an Utente acccount
 function createAccountUtente(req, res) {
 	if (checkNewUserProperties(req.body)) {
 		model.createUtente(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
@@ -27,7 +34,7 @@ function createAccountUtente(req, res) {
 	}else
 		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
-
+// check if passed info are complete then create a Gestore account
 function createAccountGestore(req, res) {
 	if (checkNewUserProperties(req.body)) {
 		model.createGestore(req.body.nome, req.body.cognome, req.body.email, req.body.paypal, req.body.telefono, req.body.password).then((id) => {
@@ -45,7 +52,7 @@ function createAccountGestore(req, res) {
 	}else
 		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
-
+// return the logged user info 
 function getLoggedAccount(req, res){
 	let userId = req.loggedUser.id;
 	model.getAccountById(userId).then(account => {
@@ -58,7 +65,7 @@ function getLoggedAccount(req, res){
 		res.json({success:false, message:"Errore nella ricerca del dettaglio account", errno:4});
 	});
 }
-
+// check if the passed info are complete then edit the current user info
 function editAccount(req, res) {
 	let userId = req.loggedUser.id;
 	if(checkNewUserProperties(req.body)){
@@ -74,7 +81,7 @@ function editAccount(req, res) {
 	}else
 		res.json({success:false, message: "I parametri richiesti sono: nome, cognome, email, paypal, telefono, password. Non tutti sono stati forniti", errno:2});
 }
-
+//given the mail change the user password and send it to its mail
 async function recuperoPassword(req, res){
 	let email = req.body.email;
 	if(!email)
@@ -93,7 +100,7 @@ async function recuperoPassword(req, res){
 		
 	}
 }
-
+// delete the logged user account
 function deleteAccount(req, res) {
 	let userId = req.loggedUser.id;
 	model.deleteAccount(userId).then((result) => {
@@ -105,7 +112,7 @@ function deleteAccount(req, res) {
 		res.json({success:false, message:"Errore nella cancellazione dell'account", errno:4});
 	});
 }
-
+// check if the passed info are complete
 function checkNewUserProperties(reqBody) {
 	return reqBody.nome != undefined && reqBody.nome != null &&
 		reqBody.cognome != undefined && reqBody.cognome != null &&
@@ -114,7 +121,7 @@ function checkNewUserProperties(reqBody) {
 		reqBody.telefono != undefined && reqBody.telefono != null &&
 		reqBody.password != undefined && reqBody.password != null;
 }
-
+// generate a 24 hour authentication token 
 async function generateToken(req, res){
     let account = await model.getAccountByEmail(req.body.email)
     if (!account) res.json({success:false,message:'User not found', errno:2})
@@ -139,6 +146,7 @@ async function generateToken(req, res){
 	}
 }
 
+// given a campo and a gestoreID return true if the gestore owns the campo
 async function checkOwnsCampo(idGestore, idCampo){
 	campi = await model.getListaCampiGestore(idGestore);
 	let result = false;
@@ -152,21 +160,21 @@ async function checkOwnsCampo(idGestore, idCampo){
 	}
 	return result;
 }
-
+//check if logged user is a Gestore
 const checkIsGestore = function(req, res){
 	let check = req.loggedUser && req.loggedUser.tipologia == "Gestore";
 	if(!check)
 		res.json({ success: false, message: "You are not authorized to do this", errno:3})
 	return check;
 }
-
+//check if logged user is a Utente
 const checkIsUtente = function (req, res) {
 	let check = req.loggedUser && req.loggedUser.tipologia == "Utente";
 	if(!check)
 		res.json({ success: false, message: "You are not authorized to do this", errno:3 })
 	return check;
 }
-
+// check the token and return email and account tipe of the user associate whith the token 
 const tokenChecker = function(req, res, next) {
     // header or url parameters or post parameters
     var token = req.body.token || req.query.token || req.headers['x-access-token'];

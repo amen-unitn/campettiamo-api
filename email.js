@@ -1,8 +1,13 @@
+// --------------------------------------------------> MODULO PEER MANDARE MAIL <--------------------------------------------------
+
+// ---------------------------------------------------------> SET UP <-------------------------------------------------------------
 const sgMail = require('@sendgrid/mail')
 require('dotenv').config()
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 var db = require('./db-model');
 const model = new db.Model();
+
+// ---------------------------------------------------------> FUNCTION<--------------------------------------------------------------
 
 async function sendNewPasswordEmail(email, newPassword){
 
