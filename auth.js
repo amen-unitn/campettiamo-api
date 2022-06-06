@@ -49,9 +49,10 @@ function createAccountGestore(req, res) {
 function getLoggedAccount(req, res){
 	let userId = req.loggedUser.id;
 	model.getAccountById(userId).then(account => {
-		if(account != null)
+		if(account != null){
+			account.password = null;
 			res.json({success:true, data:account});
-		else
+		}else
 			res.json({success:false, message:"User not found", errno:2});
 	}).catch(err => {
 		res.json({success:false, message:"Errore nella ricerca del dettaglio account", errno:4});
