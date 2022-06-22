@@ -24,7 +24,7 @@ async function searchPayPalUserInVault(email, callback) {
 
 async function addPayPalUserInVault(nome, cognome, email, telefono, callback, errCallback) {
 	try{
-		await gateway.customer.create({
+		let result = await gateway.customer.create({
 			firstName: nome,
 			lastName: cognome,
 			email: email,
