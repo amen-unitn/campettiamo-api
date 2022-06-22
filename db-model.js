@@ -635,7 +635,7 @@ class DBModel {
                 }
             })
             slots = slots.filter(s => {
-                let diff = Math.abs(new Date(s.data + " " + s.oraInizio).getTime() - (new Date().getTime())) / 3600000
+                let diff = (new Date(s.data + " " + s.oraInizio).getTime() - (new Date().getTime())) / 3600000
                 //console.log("diff (hours) = " + diff)
                 //console.log("prenota entro = " + prenotaEntro)
                 return diff > prenotaEntro
